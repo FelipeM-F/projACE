@@ -8,6 +8,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../index";
 import CustomButton from "../../assets/CustomButton";
+import BaseLayout from "./baseLayout";
 
 type SignUpScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -53,29 +54,31 @@ const SignUp = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TextInputWithLabel
-        label="Email"
-        placeholder="Enter your email"
-        validationSchema={emailSchema}
-        onChangeText={(text) => {
-          setEmail(text);
-          setErrors((prev) => ({ ...prev, email: "" }));
-        }}
-        error={errors.email}
-      />
-      <TextInputWithLabel
-        label="Password"
-        placeholder="Enter your password"
-        validationSchema={passwordSchema}
-        onChangeText={(text) => {
-          setPassword(text);
-          setErrors((prev) => ({ ...prev, password: "" }));
-        }}
-        error={errors.password}
-      />
-      <CustomButton title="Sign Up" onPress={handleSignUp} />
-    </View>
+    <BaseLayout>
+      <View style={styles.container}>
+        <TextInputWithLabel
+          label="Email"
+          placeholder="Enter your email"
+          validationSchema={emailSchema}
+          onChangeText={(text) => {
+            setEmail(text);
+            setErrors((prev) => ({ ...prev, email: "" }));
+          }}
+          error={errors.email}
+        />
+        <TextInputWithLabel
+          label="Password"
+          placeholder="Enter your password"
+          validationSchema={passwordSchema}
+          onChangeText={(text) => {
+            setPassword(text);
+            setErrors((prev) => ({ ...prev, password: "" }));
+          }}
+          error={errors.password}
+        />
+        <CustomButton title="Sign Up" onPress={handleSignUp} />
+      </View>
+    </BaseLayout>
   );
 };
 

@@ -8,7 +8,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../index";
 import CustomButton from "../../assets/CustomButton";
-
+import BaseLayout from "./baseLayout";
 
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "Login">;
@@ -72,6 +72,8 @@ const Login = () => {
   }
 
   return (
+    <BaseLayout>
+
     <View style={styles.container}>
       <TextInputWithLabel
         label="Email"
@@ -100,6 +102,7 @@ const Login = () => {
         color="#28a745"
       />
     </View>
+    </BaseLayout>
   );
 };
 
