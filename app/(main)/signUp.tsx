@@ -1,25 +1,19 @@
 import React, { useState } from "react";
 import { View, Button, StyleSheet, Alert } from "react-native";
-import TextInputWithLabel from "./textInputWithLabel";
+import TextInputWithLabel from "../../components/textInputWithLabel";
 import { z } from "zod";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../index";
-import CustomButton from "../../assets/CustomButton";
-import BaseLayout from "./baseLayout";
+import CustomButton from "../../components/CustomButton";
 
-type SignUpScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "SignUp"
->;
+
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const navigation = useNavigation<SignUpScreenNavigationProp>();
 
   const emailSchema = z.string().email({ message: "Invalid email address" });
   const passwordSchema = z
@@ -39,7 +33,6 @@ const SignUp = () => {
       const user = userCredential.user;
 
       Alert.alert("Sign Up Successful", `Welcome, ${user.email}`);
-      navigation.navigate("Login");
     } catch (e) {
       if (e instanceof z.ZodError) {
         const newErrors: { [key: string]: string } = {};
@@ -54,11 +47,10 @@ const SignUp = () => {
   };
 
   return (
-    <BaseLayout>
       <View style={styles.container}>
         <TextInputWithLabel
-          label="Email"
-          placeholder="Enter your email"
+          label="Emaillll"
+          placeholder="Enter your email !!"
           validationSchema={emailSchema}
           onChangeText={(text) => {
             setEmail(text);
@@ -78,7 +70,6 @@ const SignUp = () => {
         />
         <CustomButton title="Sign Up" onPress={handleSignUp} />
       </View>
-    </BaseLayout>
   );
 };
 

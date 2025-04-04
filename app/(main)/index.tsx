@@ -1,24 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import TextInputWithLabel from "./textInputWithLabel";
+import TextInputWithLabel from "../../components/textInputWithLabel";
 import { z } from "zod";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../index";
-import CustomButton from "../../assets/CustomButton";
-import BaseLayout from "./baseLayout";
-
-
-type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, "Login">;
+import CustomButton from "../../components/CustomButton";
+import { Redirect, useRouter } from 'expo-router';
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const router = useRouter();
 
   const emailSchema = z.string().email({ message: "Invalid email address" });
   const passwordSchema = z.string().min(6, { message: "Password must be at least 6 characters long" });
@@ -27,15 +22,15 @@ const Login = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         console.log("Usuário já está autenticado:", user.email);
-        navigation.replace("Main");
+        setIsAuthenticated(true);
       } else {
         console.log("Nenhum usuário logado.");
       }
       setLoading(false);
     });
-  
+
     return () => unsubscribe();
-  }, [navigation]);
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -47,7 +42,7 @@ const Login = () => {
       const user = userCredential.user;
 
       console.log("Login successful:", user.email);
-      navigation.replace("Main"); 
+      setIsAuthenticated(true);
     } catch (e) {
       if (e instanceof z.ZodError) {
         const newErrors: { [key: string]: string } = {};
@@ -71,9 +66,11 @@ const Login = () => {
     );
   }
 
-  return (
-    <BaseLayout>
+  if (isAuthenticated) {
+    return <Redirect href="/main" />;
+  }
 
+  return (
     <View style={styles.container}>
       <TextInputWithLabel
         label="Email"
@@ -98,11 +95,10 @@ const Login = () => {
       <CustomButton title="Login" onPress={handleLogin} />
       <CustomButton
         title="Sign Up"
-        onPress={() => navigation.navigate("SignUp")}
+        onPress={() => router.push("/signUp")}
         color="#28a745"
       />
     </View>
-    </BaseLayout>
   );
 };
 
