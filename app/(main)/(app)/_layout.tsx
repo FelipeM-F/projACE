@@ -1,18 +1,18 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { useNavigation, NavigationProp } from "@react-navigation/native";
-import CustomButton from "../../assets/CustomButton";
-import { auth } from "../../firebaseConfig";
-import { signOut } from "firebase/auth";
-import { RootStackParamList } from "../index";
+import { Stack, useRouter } from 'expo-router';
+import { View, Text, StyleSheet } from 'react-native';
+import CustomButton from '../../../components/CustomButton';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../../firebaseConfig';
+import { useNavigation } from '@react-navigation/native';
+
 
 const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigation.navigate("Login");
+      router.replace('/');
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -67,4 +67,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BaseLayout;
+export default function AppLayout() {
+  return (
+    <BaseLayout>
+      <Stack />
+    </BaseLayout>
+  );
+}

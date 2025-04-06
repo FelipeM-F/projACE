@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, Button, StyleSheet, Alert } from "react-native";
-import TextInputWithLabel from "./textInputWithLabel";
-import DropdownWithLabel from "./dropdownWithLabel";
-import DateTimePickerWithLabel from "./dateTimePickerWithLabel";
-import LocationInfo from "./location-info";
+import { View, Button, StyleSheet, Alert, ScrollView } from "react-native";
+import TextInputWithLabel from "../../../components/textInputWithLabel";
+import DropdownWithLabel from "../../../components/dropdownWithLabel";
+import DateTimePickerWithLabel from "../../../components/dateTimePickerWithLabel";
+import LocationInfo from "../../../components/location-info";
 import { z } from "zod";
 
 const Form = () => {
@@ -45,7 +45,7 @@ const Form = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <TextInputWithLabel
         label="Name"
         placeholder="Enter your name"
@@ -75,14 +75,14 @@ const Form = () => {
       />
       <LocationInfo onLocationUpdate={setLocation} />
       <Button title="Submit" onPress={handleSubmit} />
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: "center",
+    flexGrow: 1, 
+    justifyContent: "flex-start", 
     padding: 20,
   },
 });
