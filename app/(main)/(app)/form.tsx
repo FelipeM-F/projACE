@@ -56,6 +56,46 @@ const Form = () => {
         }}
         error={errors.name}
       />
+      <TextInputWithLabel
+        label="Name"
+        placeholder="Enter your name"
+        validationSchema={nameSchema}
+        onChangeText={(text) => {
+          setName(text);
+          setErrors((prev) => ({ ...prev, name: "" }));
+        }}
+        error={errors.name}
+      />
+      <TextInputWithLabel
+        label="Name"
+        placeholder="Enter your name"
+        validationSchema={nameSchema}
+        onChangeText={(text) => {
+          setName(text);
+          setErrors((prev) => ({ ...prev, name: "" }));
+        }}
+        error={errors.name}
+      />
+      <TextInputWithLabel
+        label="Name"
+        placeholder="Enter your name"
+        validationSchema={nameSchema}
+        onChangeText={(text) => {
+          setName(text);
+          setErrors((prev) => ({ ...prev, name: "" }));
+        }}
+        error={errors.name}
+      />
+      <TextInputWithLabel
+        label="Name"
+        placeholder="Enter your name"
+        validationSchema={nameSchema}
+        onChangeText={(text) => {
+          setName(text);
+          setErrors((prev) => ({ ...prev, name: "" }));
+        }}
+        error={errors.name}
+      />
       <DropdownWithLabel
         label="Atividade"
         options={activityOptions}
@@ -73,7 +113,7 @@ const Form = () => {
           setDate(selectedDate);
         }}
       />
-      <LocationInfo onLocationUpdate={setLocation} />
+      {/* <LocationInfo onLocationUpdate={setLocation} /> */}
       <Button title="Submit" onPress={handleSubmit} />
     </ScrollView>
   );

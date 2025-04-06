@@ -24,6 +24,19 @@ const handleChange = (value: any) => {
         setValue={handleChange}
         setItems={setItems}
         style={[styles.dropdown, error ? styles.dropdownError : null]}
+        dropDownContainerStyle={{
+          position: 'absolute', // Posicionamento absoluto
+          top: 20, // Ajuste conforme sua altura de componente
+          width: '100%',
+          zIndex: 1000,
+        }}
+        listMode="MODAL" // Abre em modal separado (evita conflito)
+        modalProps={{
+          animationType: "fade",
+        }}
+        modalContentContainerStyle={{
+          backgroundColor: 'white',
+        }}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
