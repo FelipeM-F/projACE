@@ -1,12 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { z } from "zod";
 
-const TextInputWithLabel = ({ label, placeholder, validationSchema, onChangeText, error }: { label: string; placeholder: string; validationSchema: any; onChangeText: (text: string) => void; error?: string }) => {
-  const [value, setValue] = useState("");
+const TextInputWithLabel = ({
+  label,
+  placeholder,
+  validationSchema,
+  onChangeText,
+  error,
+  value,
+}: {
+  label: string;
+  placeholder: string;
+  validationSchema: any;
+  onChangeText: (text: string) => void;
+  error?: string;
+  value?: string;
+}) => {
+  const [internalValue, setInternalValue] = useState(value || "");
+
+  useEffect(() => {
+    setInternalValue(value || ""); // Atualize o valor interno quando `value` mudar
+  }, [value]);
 
   const handleChange = (text: string) => {
-    setValue(text);
+    setInternalValue(text);
     onChangeText(text);
   };
 
@@ -16,9 +34,9 @@ const TextInputWithLabel = ({ label, placeholder, validationSchema, onChangeText
       <TextInput
         style={[styles.input, error ? styles.inputError : null]}
         placeholder={placeholder}
-        value={value}
+        value={internalValue}
         onChangeText={handleChange}
-        secureTextEntry = {label === "Password" ? true : false}
+        secureTextEntry={label === "Password" ? true : false}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>

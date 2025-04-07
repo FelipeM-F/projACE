@@ -1,33 +1,51 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { z } from "zod";
 
-const DropdownWithLabel = ({ label, options, validationSchema, onChangeValue, error }: { label: string; options: any[]; validationSchema: z.ZodSchema<any>; onChangeValue: (value: any) => void; error?: string }) => {
+const DropdownWithLabel = ({
+  label,
+  options,
+  validationSchema,
+  onChangeValue,
+  error,
+  value,
+}: {
+  label: string;
+  options: any[];
+  validationSchema: z.ZodSchema<any>;
+  onChangeValue: (value: any) => void;
+  error?: string;
+  value?: string | null;
+}) => {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
   const [items, setItems] = useState(options);
+  const [internalValue, setInternalValue] = useState(value);
 
-const handleChange = (value: any) => {
-    setValue(value);
+  useEffect(() => {
+    setInternalValue(value); // Atualize o valor interno quando `value` mudar
+  }, [value]);
+
+  const handleChange = (value: any) => {
+    setInternalValue(value);
     onChangeValue(value);
-};
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <DropDownPicker
         open={open}
-        value={value}
+        value={internalValue ?? null}
         items={items}
         setOpen={setOpen}
         setValue={handleChange}
         setItems={setItems}
         style={[styles.dropdown, error ? styles.dropdownError : null]}
         dropDownContainerStyle={{
-          position: 'absolute', // Posicionamento absoluto
+          position: "absolute", // Posicionamento absoluto
           top: 20, // Ajuste conforme sua altura de componente
-          width: '100%',
+          width: "100%",
           zIndex: 1000,
         }}
         listMode="MODAL" // Abre em modal separado (evita conflito)
@@ -35,7 +53,7 @@ const handleChange = (value: any) => {
           animationType: "fade",
         }}
         modalContentContainerStyle={{
-          backgroundColor: 'white',
+          backgroundColor: "white",
         }}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}

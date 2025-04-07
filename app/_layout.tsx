@@ -1,9 +1,12 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
+import { VisitProvider } from "./(main)/(app)/context/VisitContext";
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="(main)" />
-    </Stack>
+    <VisitProvider>
+      <Stack>
+        <Stack.Screen name="(main)" />
+      </Stack>
+    </VisitProvider>
   );
 }
