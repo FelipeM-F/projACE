@@ -16,10 +16,10 @@ const Form = () => {
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // Novo estado
   const { visits, addVisit, updateVisit } = useVisitContext();
   const router = useRouter();
   const { id } = useLocalSearchParams();
-
 
   const nameSchema = z
     .string()
@@ -41,6 +41,9 @@ const Form = () => {
   }, [id]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // Evita múltiplos cliques
+    
+    setIsSubmitting(true); // Ativa o estado de submitting
     try {
       nameSchema.parse(name);
       activitySchema.parse(activity);
@@ -72,6 +75,8 @@ const Form = () => {
         newErrors.general = (e as Error).message;
       }
       setErrors(newErrors);
+    } finally {
+      setIsSubmitting(false); // Desativa o estado de submitting independente do resultado
     }
   };
 
@@ -114,7 +119,11 @@ const Form = () => {
         }}
       />
       <LocationInfo onLocationUpdate={setLocation} />
-      <Button title="Submit" onPress={handleSubmit} />
+      <Button 
+        title={isSubmitting ? "Processing..." : "Submit"} 
+        onPress={handleSubmit} 
+        disabled={isSubmitting} 
+      />
     </ScrollView>
   );
 };

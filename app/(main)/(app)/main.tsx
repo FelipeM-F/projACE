@@ -1,7 +1,13 @@
 import React from "react";
 import { View, Text, StyleSheet, FlatList, Button, Alert } from "react-native";
-import { useVisitContext } from "./context/VisitContext";
+import { useVisitContext, Visit } from "./context/VisitContext";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { firestore } from "../../../firebaseConfig";
+import { v4 as uuidv4 } from "uuid";
+
+const LOCAL_STORAGE_KEY = "visits";
 
 const Main = () => {
   const { visits, deleteVisit, syncVisits } = useVisitContext();
@@ -24,17 +30,39 @@ const Main = () => {
       ]
     );
   };
-  
+
   const handleSync = async () => {
     try {
-      await syncVisits();
+      const storedVisits = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedVisits) {
+        const parsedVisits: Visit[] = JSON.parse(storedVisits);
+
+        // Envia os dados locais para o Firestore
+        for (const visit of parsedVisits) {
+          if (!visit.id.startsWith("offline-")) continue; // Ignora visitas já sincronizadas
+          await addDoc(collection(firestore, "visits"), {
+            ...visit,
+            date: Timestamp.fromDate(visit.date),
+          });
+        }
+
+        // Atualiza o estado local e remove os IDs offline
+        const syncedVisits = parsedVisits.map((visit) => ({
+          ...visit,
+          id: visit.id.startsWith("offline-") ? uuidv4() : visit.id,
+        }));
+        await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(syncedVisits));
+        syncVisits(); // Atualiza o estado global
+      }
+
       Alert.alert("Success", "Visits synchronized with Firestore!");
     } catch (error) {
       console.error("Error syncing visits:", error);
+      Alert.alert("Error", "Failed to sync visits.");
     }
   };
 
-  const renderVisit = ({ item }: { item: any }) => (
+  const renderVisit = ({ item }: { item: Visit }) => (
     <View style={styles.visitItem}>
       <Text style={styles.visitText}>Name: {item.name}</Text>
       <Text style={styles.visitText}>Activity: {item.activity}</Text>
