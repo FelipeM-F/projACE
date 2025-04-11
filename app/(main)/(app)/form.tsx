@@ -9,6 +9,7 @@ import { useVisitContext } from "./context/VisitContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
+import { getAuth } from "firebase/auth";
 
 const Form = () => {
   const [name, setName] = useState("");
@@ -42,20 +43,25 @@ const Form = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return; // Evita múltiplos cliques
-    
+  
     setIsSubmitting(true); // Ativa o estado de submitting
     try {
       nameSchema.parse(name);
       activitySchema.parse(activity);
+  
+      const auth = getAuth();
+      const user = auth.currentUser;
 
       const visitData = {
-        id: Array.isArray(id) ? id[0]: id || uuidv4(),
+        id: Array.isArray(id) ? id[0] : id || uuidv4(),
         name,
         activity: activity!,
         date,
         location,
+        userId: user?.uid || "unknown",
+        userName: user?.displayName || "unknown",
       };
-
+  
       if (id) {
         await updateVisit(id as string, visitData);
         Alert.alert("Success", "Visit updated successfully!");
@@ -76,7 +82,7 @@ const Form = () => {
       }
       setErrors(newErrors);
     } finally {
-      setIsSubmitting(false); // Desativa o estado de submitting independente do resultado
+      setIsSubmitting(false); // Desativa o estado de submitting
     }
   };
 

@@ -70,6 +70,7 @@ const Main = () => {
       <Text style={styles.visitText}>
         Location: {item.location.latitude}, {item.location.longitude}
       </Text>
+      <Text style={styles.visitText}>Registered by: {item.userName}</Text>
       <Button title="Edit" onPress={() => router.push(`/form?id=${item.id}`)} />
       <Button title="Delete" onPress={() => handleDelete(item.id)} color="red" />
     </View>
