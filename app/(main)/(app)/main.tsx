@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, Button, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Button, Alert } from "react-native";
 import { useVisitContext, Visit } from "./context/VisitContext";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,6 +12,63 @@ const LOCAL_STORAGE_KEY = "visits";
 const Main = () => {
   const { visits, deleteVisit, syncVisits } = useVisitContext();
   const router = useRouter();
+  const [expandedDates, setExpandedDates] = React.useState<{ [key: string]: boolean }>({});
+
+  const toggleDateGroup = (date: string) => {
+    setExpandedDates((prev) => ({
+      ...prev,
+      [date]: !prev[date], // Alterna o estado de expansão para a data clicada
+    }));
+  };
+
+  const groupVisitsByDate = (visits: Visit[]) => {
+    return visits.reduce((acc: { [key: string]: Visit[] }, visit) => {
+      const dateKey = new Date(visit.date).toLocaleDateString(); // Formata a data como chave
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(visit);
+      return acc;
+    }, {});
+  };
+
+  const renderGroupedVisits = () => {
+    const groupedVisits = groupVisitsByDate(visits);
+  
+    return Object.entries(groupedVisits).map(([date, visits]) => (
+      <View key={date} style={styles.dateGroup}>
+        <Text
+          style={styles.dateHeader}
+          onPress={() => toggleDateGroup(date)} // Alterna a expansão ao clicar na data
+        >
+          {date}
+        </Text>
+        {expandedDates[date] && ( // Exibe as visitas apenas se o grupo estiver expandido
+          <View style={styles.visitList}>
+            {visits.map((visit) => (
+              <View key={visit.id} style={styles.visitItem}>
+                <Text style={styles.visitText}>Name: {visit.name}</Text>
+                <Text style={styles.visitText}>Activity: {visit.activity}</Text>
+                <Text style={styles.visitText}>
+                  Location: {visit.location.latitude}, {visit.location.longitude}
+                </Text>
+                <Text style={styles.visitText}>Registered by: {visit.userName}</Text>
+                <Button
+                  title="Edit"
+                  onPress={() => router.push(`/form?id=${visit.id}`)}
+                />
+                <Button
+                  title="Delete"
+                  onPress={() => handleDelete(visit.id)}
+                  color="red"
+                />
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    ));
+  };
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -79,11 +136,7 @@ const Main = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Registered Visits</Text>
-      <FlatList
-        data={visits}
-        keyExtractor={(item) => item.id}
-        renderItem={renderVisit}
-      />
+      <ScrollView>{renderGroupedVisits()}</ScrollView>
       <Button title="Create New Visit" onPress={() => router.push("/form")} />
       <Button title="Sync Visits" onPress={handleSync} />
     </View>
@@ -100,8 +153,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
   },
-  visitItem: {
+  dateGroup: {
     marginBottom: 20,
+  },
+  dateHeader: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#007bff",
+    textDecorationLine: "underline", // Indica que é clicável
+  },
+  visitList: {
+    marginLeft: 10, // Indenta a lista de visitas
+  },
+  visitItem: {
+    marginBottom: 10,
     padding: 10,
     borderWidth: 1,
     borderColor: "#ccc",
