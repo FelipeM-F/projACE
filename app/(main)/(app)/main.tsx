@@ -6,6 +6,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
 import { firestore } from "../../../firebaseConfig";
 import { v4 as uuidv4 } from "uuid";
+import XLSX from "xlsx";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import * as Print from "expo-print";
 
 const LOCAL_STORAGE_KEY = "visits";
 
@@ -64,6 +68,14 @@ const Main = () => {
                 />
               </View>
             ))}
+            <Button
+              title="Export to PDF"
+              onPress={() => exportToPDF(date, visits)}
+            />
+            <Button
+              title="Export to XLSX"
+              onPress={() => exportToXLSX(date, visits)}
+            />
           </View>
         )}
       </View>
@@ -132,6 +144,97 @@ const Main = () => {
       <Button title="Delete" onPress={() => handleDelete(item.id)} color="red" />
     </View>
   );
+
+  const exportToPDF = async (date: string, visits: Visit[]) => {
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              border: 1px solid black;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f2f2f2;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Visits on ${date}</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Activity</th>
+                <th>Location</th>
+                <th>Registered By</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${visits
+                .map(
+                  (visit) => `
+                <tr>
+                  <td>${visit.name}</td>
+                  <td>${visit.activity}</td>
+                  <td>${visit.location.latitude}, ${visit.location.longitude}</td>
+                  <td>${visit.userName}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+  
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+      await Sharing.shareAsync(uri);
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      Alert.alert("Error", "Failed to export to PDF.");
+    }
+  };
+
+  const exportToXLSX = async (date: string, visits: Visit[]) => {
+    const worksheetData = [
+      ["Name", "Activity", "Location", "Registered By"],
+      ...visits.map((visit) => [
+        visit.name,
+        visit.activity,
+        `${visit.location.latitude}, ${visit.location.longitude}`,
+        visit.userName,
+      ]),
+    ];
+  
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Visits");
+  
+    const fileUri = `${FileSystem.documentDirectory}Visits_${date.replace(
+      /\//g,
+      "-"
+    )}.xlsx`;
+  
+    try {
+      const excelData = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
+      await FileSystem.writeAsStringAsync(fileUri, excelData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+  
+      await Sharing.shareAsync(fileUri);
+    } catch (error) {
+      console.error("Error exporting to XLSX:", error);
+      Alert.alert("Error", "Failed to export to XLSX.");
+    }
+  };
 
   return (
     <View style={styles.container}>
