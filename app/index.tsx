@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import TextInputWithLabel from "../../components/textInputWithLabel";
+import TextInputWithLabel from "../components/textInputWithLabel";
 import { z } from "zod";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../firebaseConfig";
-import CustomButton from "../../components/CustomButton";
+import { auth } from "../firebaseConfig";
+import CustomButton from "../components/CustomButton";
 import { Redirect, useRouter } from 'expo-router';
 
 const Login = () => {

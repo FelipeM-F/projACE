@@ -1,8 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
-import CustomButton from '../../../components/CustomButton';
+import CustomButton from '../../components/CustomButton';
 import { signOut } from 'firebase/auth';
-import { auth } from '../../../firebaseConfig';
+import { auth } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
 

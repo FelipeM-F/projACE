@@ -4,7 +4,7 @@ import { useVisitContext, Visit } from "./context/VisitContext";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
-import { firestore } from "../../../firebaseConfig";
+import { firestore } from "../../firebaseConfig";
 import { v4 as uuidv4 } from "uuid";
 import XLSX from "xlsx";
 import * as FileSystem from "expo-file-system";
@@ -121,6 +121,7 @@ const Main = () => {
           id: visit.id.startsWith("offline-") ? uuidv4() : visit.id,
         }));
         await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(syncedVisits));
+        console.log("Visits synced with Firestore.");
         syncVisits(); // Atualiza o estado global
       }
 

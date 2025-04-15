@@ -7,7 +7,7 @@ import {
   doc,
   getDocs,
 } from "firebase/firestore";
-import { firestore } from "../../../../firebaseConfig";
+import { firestore } from "../../../firebaseConfig";
 import { getAuth } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,6 +21,32 @@ export interface Visit {
   location: { latitude: number; longitude: number };
   userId: string;
   userName: string;
+  municipio: string;
+  localidade: string;
+  categoria: string | null;
+  zona: string;
+  tipo: string | null;
+  concluida: string | null;
+  dataAtividade: Date;
+  cicloAno: string;
+  atividade: string | null;
+  quarteirao: string;
+  sequencia: string;
+  lado: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  tipoImovel: string | null;
+  horaEntrada: string;
+  visita: string | null;
+  pendencia: string | null;
+  numDepositos: string;
+  numAmostraInicial: string;
+  numAmostraFinal: string;
+  numTubitos: string;
+  numDepositosEliminados: string;
+  tratamentoFocal: string;
+  tratamentoPerifocal: string;
 }
 
 interface VisitContextProps {
@@ -59,36 +85,70 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
   const syncVisits = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
-
+  
     if (!user) {
+      console.error("User is not authenticated.");
       return;
     }
-
     try {
+      // Puxa os dados do Firestore
+      const querySnapshot = await getDocs(collection(firestore, "visits"));
+      const firestoreVisits: Visit[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        firestoreVisits.push({
+          id: doc.id,
+          name: data.name,
+          activity: data.activity,
+          date: data.date.toDate(), // Converte Timestamp para Date
+          location: data.location,
+          userId: data.userId,
+          userName: data.userName,
+          municipio: data.municipio,
+          localidade: data.localidade,
+          categoria: data.categoria,
+          zona: data.zona,
+          tipo: data.tipo,
+          concluida: data.concluida,
+          dataAtividade: data.dataAtividade.toDate(), // Converte Timestamp para Date
+          cicloAno: data.cicloAno,
+          atividade: data.atividade,
+          quarteirao: data.quarteirao,
+          sequencia: data.sequencia,
+          lado: data.lado,
+          logradouro: data.logradouro,
+          numero: data.numero,
+          complemento: data.complemento,
+          tipoImovel: data.tipoImovel,
+          horaEntrada: data.horaEntrada,
+          visita: data.visita,
+          pendencia: data.pendencia,
+          numDepositos: data.numDepositos,
+          numAmostraInicial: data.numAmostraInicial,
+          numAmostraFinal: data.numAmostraFinal,
+          numTubitos: data.numTubitos,
+          numDepositosEliminados: data.numDepositosEliminados,
+          tratamentoFocal: data.tratamentoFocal,
+          tratamentoPerifocal: data.tratamentoPerifocal,
+        });
+      });
+  
+      // Puxa os dados locais do AsyncStorage
       const storedVisits = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
-      const parsedVisits: Visit[] = storedVisits
-        ? JSON.parse(storedVisits)
-        : [];
-
-      // Envia os dados locais para o Firestore
-      for (const visit of parsedVisits) {
-        if (visit.id.startsWith("offline-")) {
-          const docRef = await addDoc(collection(firestore, "visits"), {
-            ...visit,
-            userId: user.uid,
-            userName: user.email || "Anonymous",
-            date: Timestamp.fromDate(visit.date),
-          });
-          visit.id = docRef.id; // Atualiza o ID com o gerado pelo Firestore
+      const localVisits: Visit[] = storedVisits ? JSON.parse(storedVisits) : [];
+  
+      // Mescla os dados locais e do Firestore, priorizando os locais
+      const mergedVisits = [...firestoreVisits];
+      localVisits.forEach((localVisit) => {
+        const index = mergedVisits.findIndex((v) => v.id === localVisit.id);
+        if (index === -1) {
+          mergedVisits.push(localVisit); // Adiciona visitas locais que não estão no Firestore
         }
-      }
-
+      });
+  
       // Atualiza o estado local e salva no AsyncStorage
-      setVisits(parsedVisits);
-      await AsyncStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(parsedVisits)
-      );
+      setVisits(mergedVisits);
+      await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mergedVisits));
     } catch (error) {
       console.error("Error syncing visits:", error);
     }
@@ -117,39 +177,38 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
   const addVisit = async (visit: Visit) => {
     const auth = getAuth();
     const user = auth.currentUser;
-
+  
     if (!user) {
       console.error("User is not authenticated.");
       return;
     }
-
+  
     try {
-      // Tenta salvar no Firestore
+      // Salva no Firestore
       const docRef = await addDoc(collection(firestore, "visits"), {
         ...visit,
-        userId: user.uid, // Associa o ID do usuário autenticado
-        userName: user.email || "Anonymous", // Usa o email do usuário como nome
-        date: Timestamp.fromDate(visit.date), // Converte Date para Timestamp
+        userId: user.uid,
+        userName: user.email || "Anonymous",
+        date: Timestamp.fromDate(visit.date),
+        dataAtividade: Timestamp.fromDate(visit.dataAtividade), // Converte para Timestamp
       });
+  
       const newVisit = {
         ...visit,
         id: docRef.id,
         userId: user.uid,
         userName: user.email || "Anonymous",
       };
-
+  
       // Atualiza o estado local
       setVisits((prev) => [...prev, newVisit]);
-
+  
       // Salva no AsyncStorage
       const updatedVisits = [...visits, newVisit];
-      await AsyncStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(updatedVisits)
-      );
+      await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedVisits));
     } catch (error) {
       console.error("Error adding visit to Firestore:", error);
-
+  
       // Salva localmente mesmo sem internet
       const newVisit = {
         ...visit,
@@ -159,22 +218,19 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
       };
       setVisits((prev) => [...prev, newVisit]);
       const updatedVisits = [...visits, newVisit];
-      await AsyncStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(updatedVisits)
-      );
+      await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedVisits));
     }
   };
 
   const updateVisit = async (id: string, updatedVisit: Visit) => {
     const auth = getAuth();
     const user = auth.currentUser;
-
+  
     if (!user) {
       console.error("User is not authenticated.");
       return;
     }
-
+  
     try {
       const visitRef = doc(firestore, "visits", id);
       await updateDoc(visitRef, {
@@ -182,8 +238,9 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
         userId: user.uid,
         userName: user.email || "Anonymous",
         date: Timestamp.fromDate(updatedVisit.date),
+        dataAtividade: Timestamp.fromDate(updatedVisit.dataAtividade), // Converte para Timestamp
       });
-
+  
       setVisits((prev) =>
         prev.map((visit) =>
           visit.id === id
@@ -195,7 +252,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             : visit
         )
       );
-
+  
       // Atualiza localmente
       const updatedVisits = visits.map((visit) =>
         visit.id === id
@@ -206,13 +263,10 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           : visit
       );
-      await AsyncStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(updatedVisits)
-      );
+      await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedVisits));
     } catch (error) {
       console.error("Error updating visit in Firestore:", error);
-
+  
       // Atualiza localmente mesmo sem internet
       setVisits((prev) =>
         prev.map((visit) =>
@@ -234,10 +288,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           : visit
       );
-      await AsyncStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify(updatedVisits)
-      );
+      await AsyncStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedVisits));
     }
   };
   const deleteVisit = async (id: string) => {

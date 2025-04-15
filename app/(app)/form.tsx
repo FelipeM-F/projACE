@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Button, StyleSheet, Alert, ScrollView } from "react-native";
-import TextInputWithLabel from "../../../components/textInputWithLabel";
-import DropdownWithLabel from "../../../components/dropdownWithLabel";
-import DateTimePickerWithLabel from "../../../components/dateTimePickerWithLabel";
-import LocationInfo from "../../../components/location-info";
+import TextInputWithLabel from "../../components/textInputWithLabel";
+import DropdownWithLabel from "../../components/dropdownWithLabel";
+import DateTimePickerWithLabel from "../../components/dateTimePickerWithLabel";
+import LocationInfo from "../../components/location-info";
 import { z } from "zod";
 import { useVisitContext } from "./context/VisitContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -125,37 +125,37 @@ const Form = () => {
 
   const pendenciaSchema = z.enum(["R", "F"], {
     errorMap: () => ({ message: "Selecione o tipo de pendência" }),
-  });
+  }).optional();
 
   const numDepositosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número de depósitos deve conter apenas números",
-    });
+    }).optional();
 
   const numAmostraInicialSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número da amostra inicial deve conter apenas números",
-    });
+    }).optional();
 
   const numAmostraFinalSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número da amostra final deve conter apenas números",
-    });
+    }).optional();
 
   const numTubitosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Quantidade de tubitos deve conter apenas números",
-    });
+    }).optional();
 
   const numDepositosEliminadosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número de depósitos eliminados deve conter apenas números",
-    });
+    }).optional();
 
   const tratamentoFocalSchema = z.string().optional();
 
@@ -174,10 +174,16 @@ const Form = () => {
   }, [id]);
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // Evita múltiplos cliques
-
+    if (isSubmitting) {
+      console.log("Submit button is disabled because isSubmitting is true.");
+      return; // Evita múltiplos cliques
+    }
+  
+    console.log("Submit button clicked.");
     setIsSubmitting(true); // Ativa o estado de submitting
+  
     try {
+      console.log("Starting validation...");
       nameSchema.parse(name);
       activitySchema.parse(activity);
       municipioSchema.parse(municipio);
@@ -203,10 +209,11 @@ const Form = () => {
       numDepositosEliminadosSchema.parse(numDepositosEliminados);
       tratamentoFocalSchema.parse(tratamentoFocal);
       tratamentoPerifocalSchema.parse(tratamentoPerifocal);
-
+  
+      console.log("Validation passed. Preparing data...");
       const auth = getAuth();
       const user = auth.currentUser;
-
+  
       const visitData = {
         id: Array.isArray(id) ? id[0] : id || uuidv4(),
         name,
@@ -242,7 +249,9 @@ const Form = () => {
         tratamentoFocal,
         tratamentoPerifocal,
       };
-
+  
+      console.log("Sending data:", visitData);
+  
       if (id) {
         await updateVisit(id as string, visitData);
         Alert.alert("Success", "Visit updated successfully!");
@@ -250,9 +259,10 @@ const Form = () => {
         await addVisit(visitData);
         Alert.alert("Success", "Visit saved successfully!");
       }
-
+  
       router.push("/main");
     } catch (e) {
+      console.error("Error during submission:", e);
       const newErrors: { [key: string]: string } = {};
       if (e instanceof z.ZodError) {
         e.errors.forEach((error) => {
@@ -263,6 +273,7 @@ const Form = () => {
       }
       setErrors(newErrors);
     } finally {
+      console.log("Submission process completed.");
       setIsSubmitting(false); // Desativa o estado de submitting
     }
   };

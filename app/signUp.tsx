@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { View, Button, StyleSheet, Alert } from "react-native";
-import TextInputWithLabel from "../../components/textInputWithLabel";
+import TextInputWithLabel from "../components/textInputWithLabel";
 import { z } from "zod";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebaseConfig";
+import { auth } from "../firebaseConfig";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
-import CustomButton from "../../components/CustomButton";
+import CustomButton from "../components/CustomButton";
 
 
 
