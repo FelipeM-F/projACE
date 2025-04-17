@@ -15,8 +15,6 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface Visit {
   id: string;
-  name: string;
-  activity: string;
   date: Date;
   location: { latitude: number; longitude: number };
   userId: string;
@@ -98,8 +96,6 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
         const data = doc.data();
         firestoreVisits.push({
           id: doc.id,
-          name: data.name,
-          activity: data.activity,
           date: data.date.toDate(), // Converte Timestamp para Date
           location: data.location,
           userId: data.userId,

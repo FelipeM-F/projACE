@@ -12,8 +12,12 @@ import { v4 as uuidv4 } from "uuid";
 import { getAuth } from "firebase/auth";
 
 const Form = () => {
-  const [name, setName] = useState("");
-  const [activity, setActivity] = useState<string | null>(null);
+  const formatTimeToHHMM = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -37,7 +41,9 @@ const Form = () => {
   const [numero, setNumero] = useState("");
   const [complemento, setComplemento] = useState("");
   const [tipoImovel, setTipoImovel] = useState<string | null>(null);
-  const [horaEntrada, setHoraEntrada] = useState("");
+  const [horaEntrada, setHoraEntrada] = useState(
+    formatTimeToHHMM(dataAtividade)
+  );
   const [visita, setVisita] = useState<string | null>(null);
   const [pendencia, setPendencia] = useState<string | null>(null);
   const [numDepositos, setNumDepositos] = useState("");
@@ -48,10 +54,7 @@ const Form = () => {
   const [tratamentoFocal, setTratamentoFocal] = useState("");
   const [tratamentoPerifocal, setTratamentoPerifocal] = useState("");
 
-  const nameSchema = z
-    .string()
-    .min(2, { message: "Name must be at least 2 characters long" });
-  const activitySchema = z.enum(["1", "2", "3", "4", "5", "6"], {
+  const atividadeSchema = z.enum(["1", "2", "3", "4", "5", "6"], {
     errorMap: () => ({ message: "Please select a valid activity" }),
   });
 
@@ -79,17 +82,13 @@ const Form = () => {
     errorMap: () => ({ message: "Selecione se a atividade foi concluída" }),
   });
 
-  const cicloAnoSchema = z
-    .string()
-    .regex(/^\d{2}-\d{4}$/, {
-      message: "Ciclo/Ano deve estar no formato 01-2023",
-    });
+  const cicloAnoSchema = z.string().regex(/^\d{2}-\d{4}$/, {
+    message: "Ciclo/Ano deve estar no formato 01-2023",
+  });
 
-  const quarteiraoSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Número do quarteirão deve conter apenas números",
-    });
+  const quarteiraoSchema = z.string().regex(/^\d*$/, {
+    message: "Número do quarteirão deve conter apenas números",
+  });
 
   const sequenciaSchema = z
     .string()
@@ -115,47 +114,56 @@ const Form = () => {
 
   const horaEntradaSchema = z
     .string()
-    .regex(/^\d{2}:\d{2}$/, {
-      message: "Hora de entrada deve estar no formato HH:mm",
+    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+      message: "Hora de entrada deve estar no formato HH:mm (00:00 a 23:59)",
     });
 
-  const visitaSchema = z.enum(["N", "R"], {
-    errorMap: () => ({ message: "Selecione o tipo de visita" }),
-  });
+  const visitaSchema = z
+    .enum(["N", "R"], {
+      errorMap: () => ({ message: "Selecione o tipo de visita" }),
+    })
+    .optional();
 
-  const pendenciaSchema = z.enum(["R", "F"], {
-    errorMap: () => ({ message: "Selecione o tipo de pendência" }),
-  }).optional();
+  const pendenciaSchema = z
+    .enum(["R", "F"], {
+      errorMap: () => ({ message: "Selecione o tipo de pendência" }),
+    })
+    .optional();
 
   const numDepositosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número de depósitos deve conter apenas números",
-    }).optional();
+    })
+    .optional();
 
   const numAmostraInicialSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número da amostra inicial deve conter apenas números",
-    }).optional();
+    })
+    .optional();
 
   const numAmostraFinalSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número da amostra final deve conter apenas números",
-    }).optional();
+    })
+    .optional();
 
   const numTubitosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Quantidade de tubitos deve conter apenas números",
-    }).optional();
+    })
+    .optional();
 
   const numDepositosEliminadosSchema = z
     .string()
     .regex(/^\d*$/, {
       message: "Número de depósitos eliminados deve conter apenas números",
-    }).optional();
+    })
+    .optional();
 
   const tratamentoFocalSchema = z.string().optional();
 
@@ -165,27 +173,38 @@ const Form = () => {
     if (id) {
       const visit = visits.find((v) => v.id === id);
       if (visit) {
-        setName(visit.name);
-        setActivity(visit.activity);
         setDate(new Date(visit.date));
         setLocation(visit.location);
       }
     }
   }, [id]);
 
+  useEffect(() => {
+    setHoraEntrada(formatTimeToHHMM(dataAtividade));
+  }, [dataAtividade]);
+
+  const handleHoraEntradaChange = (text: string) => {
+    setHoraEntrada(text);
+
+    if (/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(text)) {
+      const [hours, minutes] = text.split(":");
+      const newDate = new Date(dataAtividade);
+      newDate.setHours(parseInt(hours, 10));
+      newDate.setMinutes(parseInt(minutes, 10));
+      setDataAtividade(newDate);
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) {
       console.log("Submit button is disabled because isSubmitting is true.");
       return; // Evita múltiplos cliques
     }
-  
+
     console.log("Submit button clicked.");
     setIsSubmitting(true); // Ativa o estado de submitting
-  
+
     try {
-      console.log("Starting validation...");
-      nameSchema.parse(name);
-      activitySchema.parse(activity);
       municipioSchema.parse(municipio);
       localidadeSchema.parse(localidade);
       categoriaSchema.parse(categoria);
@@ -209,15 +228,13 @@ const Form = () => {
       numDepositosEliminadosSchema.parse(numDepositosEliminados);
       tratamentoFocalSchema.parse(tratamentoFocal);
       tratamentoPerifocalSchema.parse(tratamentoPerifocal);
-  
+
       console.log("Validation passed. Preparing data...");
       const auth = getAuth();
       const user = auth.currentUser;
-  
+
       const visitData = {
         id: Array.isArray(id) ? id[0] : id || uuidv4(),
-        name,
-        activity: activity!,
         date,
         location,
         userId: user?.uid || "unknown",
@@ -249,9 +266,9 @@ const Form = () => {
         tratamentoFocal,
         tratamentoPerifocal,
       };
-  
+
       console.log("Sending data:", visitData);
-  
+
       if (id) {
         await updateVisit(id as string, visitData);
         Alert.alert("Success", "Visit updated successfully!");
@@ -259,7 +276,7 @@ const Form = () => {
         await addVisit(visitData);
         Alert.alert("Success", "Visit saved successfully!");
       }
-  
+
       router.push("/main");
     } catch (e) {
       console.error("Error during submission:", e);
@@ -280,42 +297,6 @@ const Form = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <TextInputWithLabel
-        label="Name"
-        placeholder="Enter your name"
-        validationSchema={nameSchema}
-        onChangeText={(text) => {
-          setName(text);
-          setErrors((prev) => ({ ...prev, name: "" }));
-        }}
-        error={errors.name}
-        value={name}
-      />
-      <DropdownWithLabel
-        label="Activity"
-        options={[
-          { label: "1- LI", value: "1" },
-          { label: "2- LI+T", value: "2" },
-          { label: "3- PE", value: "3" },
-          { label: "4- T", value: "4" },
-          { label: "5- DF", value: "5" },
-          { label: "6- PVE", value: "6" },
-        ]}
-        validationSchema={activitySchema}
-        onChangeValue={(value) => {
-          setActivity(value);
-          setErrors((prev) => ({ ...prev, activity: "" }));
-        }}
-        error={errors.activity}
-        value={activity}
-      />
-      <DateTimePickerWithLabel
-        label="Date and Time"
-        value={date}
-        onChange={(selectedDate) => {
-          setDate(selectedDate);
-        }}
-      />
       <LocationInfo onLocationUpdate={setLocation} />
       <TextInputWithLabel
         label="Município"
@@ -330,6 +311,23 @@ const Form = () => {
         value={localidade}
         validationSchema={localidadeSchema}
         onChangeText={setLocalidade}
+      />
+      <DropdownWithLabel
+        label="Atividade"
+        options={[
+          { label: "1- LI", value: "1" },
+          { label: "2- LI+T", value: "2" },
+          { label: "3- PE", value: "3" },
+          { label: "4- T", value: "4" },
+          { label: "5- DF", value: "5" },
+          { label: "6- PVE", value: "6" },
+        ]}
+        validationSchema={atividadeSchema}
+        onChangeValue={(value) => {
+          setAtividade(value);
+          setErrors((prev) => ({ ...prev, activity: "" }));
+        }}
+        value={atividade}
       />
       <DropdownWithLabel
         label="Categoria da Localidade"
@@ -372,6 +370,13 @@ const Form = () => {
         label="Data da Atividade"
         value={dataAtividade}
         onChange={setDataAtividade}
+      />
+      <TextInputWithLabel
+        label="Hora de Entrada"
+        placeholder="Ex: 08:20"
+        value={horaEntrada}
+        onChangeText={handleHoraEntradaChange}
+        validationSchema={horaEntradaSchema}
       />
       <TextInputWithLabel
         label="Ciclo/Ano"
@@ -436,13 +441,6 @@ const Form = () => {
         value={tipoImovel}
         onChangeValue={setTipoImovel}
         validationSchema={tipoImovelSchema}
-      />
-      <TextInputWithLabel
-        label="Hora de Entrada"
-        placeholder="Digite a hora de entrada (Ex: 08:20)"
-        value={horaEntrada}
-        onChangeText={setHoraEntrada}
-        validationSchema={horaEntradaSchema}
       />
       <DropdownWithLabel
         label="Visita"
