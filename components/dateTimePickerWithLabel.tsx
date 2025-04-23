@@ -37,8 +37,8 @@ const DateTimePickerWithLabel: React.FC<DateTimePickerWithLabelProps> = ({ label
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <Button onPress={() => setShowDate(true)} title={`Date: ${value.toLocaleDateString()}`} />
-      <Button onPress={() => setShowTime(true)} title={`Time: ${value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`} />
+      <Button onPress={() => setShowDate(true)} title={`Dia: ${value.toLocaleDateString()}`} />
+      <Button onPress={() => setShowTime(true)} title={`Hora: ${value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`} />
       {showDate && (
         <DateTimePicker
           value={value}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, StyleSheet, Alert, ScrollView } from "react-native";
+import { Button, Alert, ScrollView } from "react-native";
 import TextInputWithLabel from "../../components/textInputWithLabel";
 import DropdownWithLabel from "../../components/dropdownWithLabel";
 import DateTimePickerWithLabel from "../../components/dateTimePickerWithLabel";
@@ -10,6 +10,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import { getAuth } from "firebase/auth";
+import formStyles from "../styles/form.styles";
 
 const Form = () => {
   const formatTimeToHHMM = (date: Date) => {
@@ -175,9 +176,35 @@ const Form = () => {
       if (visit) {
         setDate(new Date(visit.date));
         setLocation(visit.location);
+        setMunicipio(visit.municipio);
+        setLocalidade(visit.localidade);
+        setCategoria(visit.categoria);
+        setZona(visit.zona);
+        setTipo(visit.tipo);
+        setConcluida(visit.concluida);
+        setDataAtividade(new Date(visit.dataAtividade));
+        setCicloAno(visit.cicloAno);
+        setAtividade(visit.atividade);
+        setQuarteirao(visit.quarteirao);
+        setSequencia(visit.sequencia);
+        setLado(visit.lado);
+        setLogradouro(visit.logradouro);
+        setNumero(visit.numero);
+        setComplemento(visit.complemento);
+        setTipoImovel(visit.tipoImovel);
+        setHoraEntrada(visit.horaEntrada);
+        setVisita(visit.visita);
+        setPendencia(visit.pendencia);
+        setNumDepositos(visit.numDepositos);
+        setNumAmostraInicial(visit.numAmostraInicial);
+        setNumAmostraFinal(visit.numAmostraFinal);
+        setNumTubitos(visit.numTubitos);
+        setNumDepositosEliminados(visit.numDepositosEliminados);
+        setTratamentoFocal(visit.tratamentoFocal);
+        setTratamentoPerifocal(visit.tratamentoPerifocal);
       }
     }
-  }, [id]);
+  }, [id, visits]);
 
   useEffect(() => {
     setHoraEntrada(formatTimeToHHMM(dataAtividade));
@@ -296,7 +323,7 @@ const Form = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={formStyles.container}>
       <LocationInfo onLocationUpdate={setLocation} />
       <TextInputWithLabel
         label="Município"
@@ -520,12 +547,6 @@ const Form = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: "flex-start",
-    padding: 20,
-  },
-});
+
 
 export default Form;
