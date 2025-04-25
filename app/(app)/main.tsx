@@ -10,6 +10,8 @@ import { exportToPDF } from "../../components/exportToPDF";
 import { exportToXLSX } from "../../components/exportToXLSX";
 import mainStyles from "../styles/main.styles";
 import CustomButton from "../../components/CustomButton";
+import { getAuth } from "firebase/auth";
+
 
 const LOCAL_STORAGE_KEY = "visits";
 
@@ -25,62 +27,102 @@ const Main = () => {
     }));
   };
 
-  const groupVisitsByDate = (visits: Visit[]) => {
-    const sortedVisits = visits.sort((a, b) => b.dataAtividade.getTime() - a.dataAtividade.getTime());
-    return sortedVisits.reduce((acc: { [key: string]: Visit[] }, visit) => {
-      const dateKey = new Date(visit.dataAtividade).toLocaleDateString(); // Formata a data como chave
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
+  const groupVisitsByMonthAndDay = (visits: Visit[]) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+  
+    if (!user) {
+      console.error("User is not authenticated.");
+      return {};
+    }
+  
+    const sortedVisits = visits
+      .filter((visit) => visit.dataAtividade && visit.userId === user.uid) // Filtra visitas do usuário autenticado
+      .map((visit) => ({
+        ...visit,
+        dataAtividade: new Date(visit.dataAtividade), // Garante que é um objeto Date
+      }))
+      .sort((a, b) => b.dataAtividade.getTime() - a.dataAtividade.getTime()); // Ordena em ordem crescente
+  
+    return sortedVisits.reduce((acc: { [key: string]: { [key: string]: Visit[] } }, visit) => {
+      const date = visit.dataAtividade;
+      const monthYearKey = `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getFullYear()}`; // Formata como "MM/YYYY"
+      const dayKey = `${date.getDate().toString().padStart(2, "0")}/${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}/${date.getFullYear()}`; // Formata como "dd/mm/aaaa"
+  
+      if (!acc[monthYearKey]) {
+        acc[monthYearKey] = {};
       }
-      acc[dateKey].push(visit);
+      if (!acc[monthYearKey][dayKey]) {
+        acc[monthYearKey][dayKey] = [];
+      }
+      acc[monthYearKey][dayKey].push(visit);
       return acc;
     }, {});
-
   };
 
   const renderGroupedVisits = () => {
-    const groupedVisits = groupVisitsByDate(visits);
-    return Object.entries(groupedVisits).map(([date, visits]) => (
-      <View key={date} style={mainStyles.dateGroup}>
-        <Text
-          style={mainStyles.dateHeader}
-          onPress={() => toggleDateGroup(date)} // Alterna a expansão ao clicar na data
-        >
-          {date}
-        </Text>
-        {expandedDates[date] && ( // Exibe as visitas apenas se o grupo estiver expandido
-          <View style={mainStyles.visitList}>
-            {visits.map((visit) => (
-              <View key={visit.id} style={mainStyles.visitItem}>
-                <Text style={mainStyles.visitText}>Ciclo: {visit.cicloAno}</Text>
-                <Text style={mainStyles.visitText}>
-                  Location: {visit.location.latitude}, {visit.location.longitude}
-                </Text>
-                <Text style={mainStyles.visitText}>Registered by: {visit.userName}</Text>
-                <CustomButton
-                  title="Edit"
-                  onPress={() => router.push(`/form?id=${visit.id}`)}
-                />
-                <CustomButton
-                  title="Delete"
-                  onPress={() => handleDelete(visit.id)}
-                  color="red"
-                />
-              </View>
-            ))}
-            <CustomButton
-              title="Export to PDF"
-              onPress={() => exportToPDF(date, visits)}
-            />
-            <CustomButton
-              title="Export to XLSX"
-              onPress={() => exportToXLSX(date, visits)}
-            />
-          </View>
-        )}
-      </View>
-    ));
-  };
+  const groupedVisits = groupVisitsByMonthAndDay(visits);
+
+  return Object.entries(groupedVisits).map(([monthYear, days]) => (
+    <View key={monthYear} style={mainStyles.dateGroup}>
+      <Text
+        style={mainStyles.dateHeader}
+        onPress={() => toggleDateGroup(monthYear)} // Alterna a expansão ao clicar no mês/ano
+      >
+        {monthYear} {/* Exibe o mês e ano */}
+      </Text>
+      {expandedDates[monthYear] && ( // Exibe os dias apenas se o grupo de mês/ano estiver expandido
+        <View>
+          {Object.entries(days).map(([day, visits]) => (
+            <View key={day} style={mainStyles.dateGroup}>
+              <Text
+                style={mainStyles.dateHeader}
+                onPress={() => toggleDateGroup(day)} // Alterna a expansão ao clicar no dia
+              >
+                {day} {/* Exibe o dia no formato "dd/mm/aaaa" */}
+              </Text>
+              {expandedDates[day] && ( // Exibe as visitas apenas se o grupo de dia estiver expandido
+                <View style={mainStyles.visitList}>
+                  {visits.map((visit) => (
+                    <View key={visit.id} style={mainStyles.visitItem}>
+                      <Text style={mainStyles.visitText}>
+                        Data: {visit.dataAtividade.toLocaleDateString("pt-BR")} {/* Exibe a data no formato "dd/mm/aaaa" */}
+                      </Text>
+                      <Text style={mainStyles.visitText}>Ciclo: {visit.cicloAno}</Text>
+                      <Text style={mainStyles.visitText}>
+                        Location: {visit.location.latitude}, {visit.location.longitude}
+                      </Text>
+                      <Text style={mainStyles.visitText}>Registered by: {visit.userName}</Text>
+                      <CustomButton
+                        title="Edit"
+                        onPress={() => router.push(`/form?id=${visit.id}`)}
+                      />
+                      <CustomButton
+                        title="Delete"
+                        onPress={() => handleDelete(visit.id)}
+                        color="red"
+                      />
+                    </View>
+                  ))}
+                  <CustomButton
+                    title="Export to PDF"
+                    onPress={() => exportToPDF(day, visits)}
+                  />
+                  <CustomButton
+                    title="Export to XLSX"
+                    onPress={() => exportToXLSX(day, visits)}
+                  />
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  ));
+};
 
   const handleDelete = (id: string) => {
     Alert.alert(

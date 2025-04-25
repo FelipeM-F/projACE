@@ -94,39 +94,41 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
       const firestoreVisits: Visit[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        firestoreVisits.push({
-          id: doc.id,
-          date: data.date.toDate(), // Converte Timestamp para Date
-          location: data.location,
-          userId: data.userId,
-          userName: data.userName,
-          municipio: data.municipio,
-          localidade: data.localidade,
-          categoria: data.categoria,
-          zona: data.zona,
-          tipo: data.tipo,
-          concluida: data.concluida,
-          dataAtividade: data.dataAtividade.toDate(), // Converte Timestamp para Date
-          cicloAno: data.cicloAno,
-          atividade: data.atividade,
-          quarteirao: data.quarteirao,
-          sequencia: data.sequencia,
-          lado: data.lado,
-          logradouro: data.logradouro,
-          numero: data.numero,
-          complemento: data.complemento,
-          tipoImovel: data.tipoImovel,
-          horaEntrada: data.horaEntrada,
-          visita: data.visita,
-          pendencia: data.pendencia,
-          numDepositos: data.numDepositos,
-          numAmostraInicial: data.numAmostraInicial,
-          numAmostraFinal: data.numAmostraFinal,
-          numTubitos: data.numTubitos,
-          numDepositosEliminados: data.numDepositosEliminados,
-          tratamentoFocal: data.tratamentoFocal,
-          tratamentoPerifocal: data.tratamentoPerifocal,
-        });
+        if (data.userId === user.uid) { // Filtra visitas pelo userId
+          firestoreVisits.push({
+            id: doc.id,
+            date: data.date.toDate(),
+            location: data.location,
+            userId: data.userId,
+            userName: data.userName,
+            municipio: data.municipio,
+            localidade: data.localidade,
+            categoria: data.categoria,
+            zona: data.zona,
+            tipo: data.tipo,
+            concluida: data.concluida,
+            dataAtividade: data.dataAtividade.toDate(),
+            cicloAno: data.cicloAno,
+            atividade: data.atividade,
+            quarteirao: data.quarteirao,
+            sequencia: data.sequencia,
+            lado: data.lado,
+            logradouro: data.logradouro,
+            numero: data.numero,
+            complemento: data.complemento,
+            tipoImovel: data.tipoImovel,
+            horaEntrada: data.horaEntrada,
+            visita: data.visita,
+            pendencia: data.pendencia,
+            numDepositos: data.numDepositos,
+            numAmostraInicial: data.numAmostraInicial,
+            numAmostraFinal: data.numAmostraFinal,
+            numTubitos: data.numTubitos,
+            numDepositosEliminados: data.numDepositosEliminados,
+            tratamentoFocal: data.tratamentoFocal,
+            tratamentoPerifocal: data.tratamentoPerifocal,
+          });
+        }
       });
 
       // Puxa os dados locais do AsyncStorage

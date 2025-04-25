@@ -126,10 +126,10 @@ const Form = () => {
     .optional();
 
   const pendenciaSchema = z
-    .enum(["R", "F"], {
+    .enum(["R", "F",""], {
       errorMap: () => ({ message: "Selecione o tipo de pendência" }),
     })
-    .optional();
+    .nullable().optional();
 
   const numDepositosSchema = z
     .string()
@@ -169,6 +169,7 @@ const Form = () => {
   const tratamentoFocalSchema = z.string().optional();
 
   const tratamentoPerifocalSchema = z.string().optional();
+  
 
   useEffect(() => {
     if (id) {
@@ -484,6 +485,8 @@ const Form = () => {
         options={[
           { label: "Recusado (R)", value: "R" },
           { label: "Fechado (F)", value: "F" },
+          { label: "Sem Pendência", value: null },
+
         ]}
         value={pendencia}
         onChangeValue={setPendencia}
