@@ -15,7 +15,7 @@ const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       await signOut(auth);
       router.replace("/");
     } catch (error) {
-      console.error("Error signing out: ", error);
+      console.error("Erro ao desconectar o usuário: ", error);
     }
   };
 

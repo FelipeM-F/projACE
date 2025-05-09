@@ -13,6 +13,11 @@ import { Timestamp } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { v4 as uuidv4 } from "uuid";
 
+
+interface Deposit {
+  sigla: string;
+  quantidade: string;
+}
 export interface Visit {
   id: string;
   date: Date;
@@ -38,7 +43,7 @@ export interface Visit {
   horaEntrada: string;
   visita: string | null;
   pendencia: string | null;
-  numDepositos: string;
+  numDepositos: Deposit[];
   numAmostraInicial: string;
   numAmostraFinal: string;
   numTubitos: string;
@@ -73,7 +78,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
         syncVisits(); // Sincroniza visitas após autenticação
       } else {
         setIsAuthenticated(false); // Usuário não autenticado
-        console.error("User is not authenticated.");
+        console.log("Usuário não autenticado. Sincronização não será realizada.");
       }
     });
 

@@ -21,6 +21,11 @@ const formStyles = StyleSheet.create({
     fontWeight: "bold",
     color: theme.colors.white,
   },
+  errorText: {
+    color: theme.colors.danger,
+    fontSize: theme.fontSizes.small,
+    marginTop: theme.spacing.tiny,
+  },
 });
 
 export default formStyles;

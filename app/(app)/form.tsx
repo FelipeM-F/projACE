@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Alert, ScrollView } from "react-native";
+import { Button, Alert, ScrollView, Text, FlatList } from "react-native";
 import TextInputWithLabel from "../../components/textInputWithLabel";
 import DropdownWithLabel from "../../components/dropdownWithLabel";
 import DateTimePickerWithLabel from "../../components/dateTimePickerWithLabel";
@@ -11,6 +11,16 @@ import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
 import { getAuth } from "firebase/auth";
 import formStyles from "../styles/form.styles";
+import RadioButton from "../../components/RadioButton";
+import DepositsInput from "../../components/DepositsInput";
+import { doc, getDoc } from "firebase/firestore";
+import { firestore } from "../../firebaseConfig";
+
+
+interface Deposit {
+  sigla: string;
+  quantidade: string;
+}
 
 const Form = () => {
   const formatTimeToHHMM = (date: Date) => {
@@ -47,7 +57,7 @@ const Form = () => {
   );
   const [visita, setVisita] = useState<string | null>(null);
   const [pendencia, setPendencia] = useState<string | null>(null);
-  const [numDepositos, setNumDepositos] = useState("");
+  const [numDepositos, setNumDepositos] = useState<Deposit[]>([]);
   const [numAmostraInicial, setNumAmostraInicial] = useState("");
   const [numAmostraFinal, setNumAmostraFinal] = useState("");
   const [numTubitos, setNumTubitos] = useState("");
@@ -59,119 +69,103 @@ const Form = () => {
     errorMap: () => ({ message: "Please select a valid activity" }),
   });
 
-  const municipioSchema = z
-    .string()
-    .min(2, { message: "Município deve ter pelo menos 2 caracteres" });
-
-  const localidadeSchema = z
-    .string()
-    .min(2, { message: "Localidade deve ter pelo menos 2 caracteres" });
-
-  const categoriaSchema = z.enum(["BIR", "PV"], {
-    errorMap: () => ({ message: "Selecione uma categoria válida" }),
-  });
-
-  const zonaSchema = z
-    .string()
-    .regex(/^\d*$/, { message: "Zona deve conter apenas números" });
-
-  const tipoSchema = z.enum(["1", "2"], {
-    errorMap: () => ({ message: "Selecione um tipo válido" }),
-  });
-
-  const concluidaSchema = z.enum(["S", "N"], {
-    errorMap: () => ({ message: "Selecione se a atividade foi concluída" }),
-  });
-
-  const cicloAnoSchema = z.string().regex(/^\d{2}-\d{4}$/, {
-    message: "Ciclo/Ano deve estar no formato 01-2023",
-  });
-
-  const quarteiraoSchema = z.string().regex(/^\d*$/, {
-    message: "Número do quarteirão deve conter apenas números",
-  });
-
-  const sequenciaSchema = z
-    .string()
-    .regex(/^\d*$/, { message: "Sequência deve conter apenas números" });
-
-  const ladoSchema = z
-    .string()
-    .regex(/^\d*$/, { message: "Lado deve conter apenas números" });
-
-  const logradouroSchema = z
-    .string()
-    .min(2, { message: "Logradouro deve ter pelo menos 2 caracteres" });
-
-  const numeroSchema = z
-    .string()
-    .regex(/^\d*$/, { message: "Número deve conter apenas números" });
-
-  const complementoSchema = z.string().optional();
-
-  const tipoImovelSchema = z.enum(["R", "C", "TB", "PE", "O"], {
-    errorMap: () => ({ message: "Selecione um tipo de imóvel válido" }),
-  });
-
-  const horaEntradaSchema = z
-    .string()
-    .regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+  const formSchema = z.object({
+    municipio: z
+      .string()
+      .min(2, { message: "Município deve ter pelo menos 2 caracteres" }),
+    localidade: z
+      .string()
+      .min(2, { message: "Localidade deve ter pelo menos 2 caracteres" }),
+    categoria: z.enum(["BIR", "PV"], {
+      errorMap: () => ({ message: "Selecione uma categoria válida" }),
+    }),
+    zona: z
+      .string()
+      .regex(/^\d*$/, { message: "Zona deve conter apenas números" }),
+    tipo: z.enum(["1", "2"], {
+      errorMap: () => ({ message: "Selecione um tipo válido" }),
+    }),
+    concluida: z.enum(["S", "N"], {
+      errorMap: () => ({ message: "Selecione se a atividade foi concluída" }),
+    }),
+    cicloAno: z.string().regex(/^\d{2}-\d{4}$/, {
+      message: "Ciclo/Ano deve estar no formato 01-2023",
+    }),
+    quarteirao: z.string().regex(/^\d*$/, {
+      message: "Número do quarteirão deve conter apenas números",
+    }),
+    sequencia: z
+      .string()
+      .regex(/^\d*$/, { message: "Sequência deve conter apenas números" }),
+    lado: z
+      .string()
+      .regex(/^\d*$/, { message: "Lado deve conter apenas números" }),
+    logradouro: z
+      .string()
+      .min(2, { message: "Logradouro deve ter pelo menos 2 caracteres" }),
+    numero: z
+      .string()
+      .regex(/^\d*$/, { message: "Número deve conter apenas números" }),
+    complemento: z.string().optional(),
+    tipoImovel: z.enum(["R", "C", "TB", "PE", "O"], {
+      errorMap: () => ({ message: "Selecione um tipo de imóvel válido" }),
+    }),
+    horaEntrada: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, {
       message: "Hora de entrada deve estar no formato HH:mm (00:00 a 23:59)",
-    });
-
-  const visitaSchema = z
-    .enum(["N", "R"], {
-      errorMap: () => ({ message: "Selecione o tipo de visita" }),
-    })
-    .optional();
-
-  const pendenciaSchema = z
-    .enum(["R", "F",""], {
-      errorMap: () => ({ message: "Selecione o tipo de pendência" }),
-    })
-    .nullable().optional();
-
-  const numDepositosSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Número de depósitos deve conter apenas números",
-    })
-    .optional();
-
-  const numAmostraInicialSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Número da amostra inicial deve conter apenas números",
-    })
-    .optional();
-
-  const numAmostraFinalSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Número da amostra final deve conter apenas números",
-    })
-    .optional();
-
-  const numTubitosSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Quantidade de tubitos deve conter apenas números",
-    })
-    .optional();
-
-  const numDepositosEliminadosSchema = z
-    .string()
-    .regex(/^\d*$/, {
-      message: "Número de depósitos eliminados deve conter apenas números",
-    })
-    .optional();
-
-  const tratamentoFocalSchema = z.string().optional();
-
-  const tratamentoPerifocalSchema = z.string().optional();
-  
+    }),
+    visita: z.enum(["N", "R"]).optional(),
+    pendencia: z.enum(["R", "F", ""]).nullable().optional(),
+    numDepositos: z
+      .array(
+        z.object({
+          sigla: z.string(),
+          quantidade: z.string(),
+        })
+      )
+      .optional(),
+    numAmostraInicial: z
+      .string()
+      .regex(/^\d*$/, {
+        message: "Número da amostra inicial deve conter apenas números",
+      })
+      .optional(),
+    numAmostraFinal: z
+      .string()
+      .regex(/^\d*$/, {
+        message: "Número da amostra final deve conter apenas números",
+      })
+      .optional(),
+    numTubitos: z
+      .string()
+      .regex(/^\d*$/, {
+        message: "Quantidade de tubitos deve conter apenas números",
+      })
+      .optional(),
+    numDepositosEliminados: z
+      .string()
+      .regex(/^\d*$/, {
+        message: "Número de depósitos eliminados deve conter apenas números",
+      })
+      .optional(),
+    tratamentoFocal: z.string().optional(),
+    tratamentoPerifocal: z.string().optional(),
+  });
 
   useEffect(() => {
+
+    const fetchMunicipio = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+  
+      if (user) {
+        const userDoc = await getDoc(doc(firestore, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setMunicipio(userData.municipio || "");
+        }
+      }
+    };
+
     if (id) {
       const visit = visits.find((v) => v.id === id);
       if (visit) {
@@ -204,6 +198,8 @@ const Form = () => {
         setTratamentoFocal(visit.tratamentoFocal);
         setTratamentoPerifocal(visit.tratamentoPerifocal);
       }
+    } else {
+      fetchMunicipio();
     }
   }, [id, visits]);
 
@@ -233,49 +229,14 @@ const Form = () => {
     setIsSubmitting(true); // Ativa o estado de submitting
 
     try {
-      municipioSchema.parse(municipio);
-      localidadeSchema.parse(localidade);
-      categoriaSchema.parse(categoria);
-      zonaSchema.parse(zona);
-      tipoSchema.parse(tipo);
-      concluidaSchema.parse(concluida);
-      cicloAnoSchema.parse(cicloAno);
-      quarteiraoSchema.parse(quarteirao);
-      sequenciaSchema.parse(sequencia);
-      ladoSchema.parse(lado);
-      logradouroSchema.parse(logradouro);
-      numeroSchema.parse(numero);
-      tipoImovelSchema.parse(tipoImovel);
-      horaEntradaSchema.parse(horaEntrada);
-      visitaSchema.parse(visita);
-      pendenciaSchema.parse(pendencia);
-      numDepositosSchema.parse(numDepositos);
-      numAmostraInicialSchema.parse(numAmostraInicial);
-      numAmostraFinalSchema.parse(numAmostraFinal);
-      numTubitosSchema.parse(numTubitos);
-      numDepositosEliminadosSchema.parse(numDepositosEliminados);
-      tratamentoFocalSchema.parse(tratamentoFocal);
-      tratamentoPerifocalSchema.parse(tratamentoPerifocal);
-
-      console.log("Validation passed. Preparing data...");
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      const visitData = {
-        id: Array.isArray(id) ? id[0] : id || uuidv4(),
-        date,
-        location,
-        userId: user?.uid || "unknown",
-        userName: user?.displayName || "unknown",
+      const formData = {
         municipio,
         localidade,
         categoria,
         zona,
         tipo,
         concluida,
-        dataAtividade,
         cicloAno,
-        atividade,
         quarteirao,
         sequencia,
         lado,
@@ -293,6 +254,23 @@ const Form = () => {
         numDepositosEliminados,
         tratamentoFocal,
         tratamentoPerifocal,
+      };
+
+      formSchema.parse(formData);
+
+      console.log("Validation passed. Preparing data...");
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      const visitData = {
+        id: Array.isArray(id) ? id[0] : id || uuidv4(),
+        date,
+        location,
+        userId: user?.uid || "unknown",
+        userName: user?.displayName || "unknown",
+        dataAtividade,
+        atividade,
+        ...formData,
       };
 
       console.log("Sending data:", visitData);
@@ -322,234 +300,422 @@ const Form = () => {
       setIsSubmitting(false); // Desativa o estado de submitting
     }
   };
+  const formFields = [
+    {
+      key: "location",
+      component: <LocationInfo onLocationUpdate={setLocation} />,
+    },
+    {
+      key: "municipio",
+      component: (
+        <TextInputWithLabel
+          label="Município"
+          placeholder="Digite o nome do município"
+          value={municipio}
+          onChangeText={setMunicipio}
+          error={errors.municipio}
+          validationSchema={formSchema.shape.municipio}
+        />
+      ),
+    },
+    {
+      key: "atividade",
+      component: (
+        <DropdownWithLabel
+          label="Atividade"
+          options={[
+            { label: "1- LI", value: "1" },
+            { label: "2- LI+T", value: "2" },
+            { label: "3- PE", value: "3" },
+            { label: "4- T", value: "4" },
+            { label: "5- DF", value: "5" },
+            { label: "6- PVE", value: "6" },
+          ]}
+          validationSchema={atividadeSchema}
+          onChangeValue={(value) => {
+            setAtividade(value);
+            setErrors((prev) => ({ ...prev, activity: "" }));
+          }}
+          value={atividade}
+        />
+      ),
+    },
+    {
+      key: "localidade",
+      component: (
+        <TextInputWithLabel
+          label="Código e nome da Localidade"
+          placeholder="Digite o nome da localidade"
+          value={localidade}
+          onChangeText={setLocalidade}
+          error={errors.localidade}
+          validationSchema={formSchema.shape.localidade}
+        />
+      ),
+    },
+    {
+      key: "categoria",
+      component: (
+        <DropdownWithLabel
+          label="Categoria da Localidade"
+          options={[
+            { label: "Bairro (BIR)", value: "BIR" },
+            { label: "Povoado (PV)", value: "PV" },
+          ]}
+          value={categoria}
+          onChangeValue={setCategoria}
+          validationSchema={formSchema.shape.categoria}
+          error={errors.categoria}
+        />
+      ),
+    },
+    {
+      key: "zona",
+      component: (
+        <TextInputWithLabel
+          label="Zona"
+          placeholder="Digite o número da zona"
+          value={zona}
+          onChangeText={setZona}
+          validationSchema={formSchema.shape.zona}
+          error={errors.zona}
+        />
+      ),
+    },
+    {
+      key: "tipo",
+      component: (
+        <DropdownWithLabel
+          label="Tipo"
+          options={[
+            { label: "1 - Sede", value: "1" },
+            { label: "2 - Outros", value: "2" },
+          ]}
+          value={tipo}
+          onChangeValue={setTipo}
+          validationSchema={formSchema.shape.tipo}
+          error={errors.tipo}
+        />
+      ),
+    },
+    {
+      key: "concluida",
+      component: (
+        <DropdownWithLabel
+          label="Concluída"
+          options={[
+            { label: "Sim (S)", value: "S" },
+            { label: "Não (N)", value: "N" },
+          ]}
+          value={concluida}
+          onChangeValue={setConcluida}
+          validationSchema={formSchema.shape.concluida}
+          error={errors.concluida}
+        />
+      ),
+    },
+    {
+      key: "dataAtividade",
+      component: (
+        <DateTimePickerWithLabel
+          label="Data da Atividade"
+          value={dataAtividade}
+          onChange={setDataAtividade}
+        />
+      ),
+    },
+    {
+      key: "horaEntrada",
+      component: (
+        <TextInputWithLabel
+          label="Hora de Entrada"
+          placeholder="Ex: 08:20"
+          value={horaEntrada}
+          onChangeText={handleHoraEntradaChange}
+          validationSchema={formSchema.shape.horaEntrada}
+          error={errors.horaEntrada}
+        />
+      ),
+    },
+    {
+      key: "cicloAno",
+      component: (
+        <TextInputWithLabel
+          label="Ciclo/Ano"
+          placeholder="Digite o ciclo e ano"
+          value={cicloAno}
+          onChangeText={setCicloAno}
+          validationSchema={formSchema.shape.cicloAno}
+          error={errors.cicloAno}
+        />
+      ),
+    },
+
+    {
+      key: "quarteirao",
+      component: (
+        <TextInputWithLabel
+          label="Número do Quarteirão"
+          placeholder="Digite o número do quarteirão"
+          value={quarteirao}
+          onChangeText={setQuarteirao}
+          validationSchema={formSchema.shape.quarteirao}
+          error={errors.quarteirao}
+        />
+      ),
+    },
+    {
+      key: "sequencia",
+      component: (
+        <TextInputWithLabel
+          label="Sequência"
+          placeholder="Digite a sequência"
+          value={sequencia}
+          onChangeText={setSequencia}
+          validationSchema={formSchema.shape.sequencia}
+          error={errors.sequencia}
+        />
+      ),
+    },
+    {
+      key: "lado",
+      component: (
+        <TextInputWithLabel
+          label="Lado"
+          placeholder="Digite o lado"
+          value={lado}
+          onChangeText={setLado}
+          validationSchema={formSchema.shape.lado}
+          error={errors.lado}
+        />
+      ),
+    },
+    {
+      key: "logradouro",
+      component: (
+        <TextInputWithLabel
+          label="Nome do Logradouro"
+          placeholder="Digite o nome do logradouro"
+          value={logradouro}
+          onChangeText={setLogradouro}
+          validationSchema={formSchema.shape.logradouro}
+          error={errors.logradouro}
+        />
+      ),
+    },
+    {
+      key: "numero",
+      component: (
+        <TextInputWithLabel
+          label="Número"
+          placeholder="Digite o número"
+          value={numero}
+          onChangeText={setNumero}
+          validationSchema={formSchema.shape.numero}
+          error={errors.numero}
+        />
+      ),
+    },
+    {
+      key: "complemento",
+      component: (
+        <TextInputWithLabel
+          label="Complemento"
+          placeholder="Digite o complemento"
+          value={complemento}
+          onChangeText={setComplemento}
+          validationSchema={formSchema.shape.complemento}
+          error={errors.complemento}
+        />
+      ),
+    },
+    {
+      key: "tipoImovelDropdown",
+      component: (
+        <DropdownWithLabel
+          label="Tipo do Imóvel"
+          options={[
+            { label: "Residência (R)", value: "R" },
+            { label: "Comércio (C)", value: "C" },
+            { label: "Terreno Baldio (TB)", value: "TB" },
+            { label: "Ponto Estratégico (PE)", value: "PE" },
+            { label: "Outro (O)", value: "O" },
+          ]}
+          value={tipoImovel}
+          onChangeValue={setTipoImovel}
+          validationSchema={formSchema.shape.tipoImovel}
+          error={errors.tipoImovel}
+        />
+      ),
+    },
+    {
+      key: "tipoImovelRadio",
+      component: (
+        <>
+          <RadioButton
+            options={[
+              { label: "Residência (R)", value: "R" },
+              { label: "Comércio (C)", value: "C" },
+              { label: "Terreno Baldio (TB)", value: "TB" },
+              { label: "Ponto Estratégico (PE)", value: "PE" },
+              { label: "Outro (O)", value: "O" },
+            ]}
+            selectedValue={tipoImovel ?? undefined}
+            onSelect={(value: string | null) => {
+              setTipoImovel(value);
+              setErrors((prev) => ({ ...prev, tipoImovel: "" }));
+            }}
+          />
+          {errors.tipoImovel && (
+            <Text style={formStyles.errorText}>{errors.tipoImovel}</Text>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "visita",
+      component: (
+        <DropdownWithLabel
+          label="Visita"
+          options={[
+            { label: "Normal (N)", value: "N" },
+            { label: "Recuperação (R)", value: "R" },
+          ]}
+          value={visita}
+          onChangeValue={setVisita}
+          validationSchema={formSchema.shape.visita}
+          error={errors.visita}
+        />
+      ),
+    },
+    {
+      key: "pendencia",
+      component: (
+        <DropdownWithLabel
+          label="Pendência"
+          options={[
+            { label: "Recusado (R)", value: "R" },
+            { label: "Fechado (F)", value: "F" },
+            { label: "Sem Pendência", value: null },
+          ]}
+          value={pendencia}
+          onChangeValue={setPendencia}
+          validationSchema={formSchema.shape.pendencia}
+          error={errors.pendencia}
+        />
+      ),
+    },
+    {
+      key: "depositsInput",
+      component: (
+        <DepositsInput
+          onChange={(deposits) => {
+            setNumDepositos(deposits);
+            setErrors((prev) => ({ ...prev, numDepositos: "" })); // Limpa o erro
+          }}
+          error={errors.numDepositos}
+        />
+      ),
+    },
+    {
+      key: "numAmostraInicial",
+      component: (
+        <TextInputWithLabel
+          label="Número da Amostra Inicial"
+          placeholder="Digite o número da amostra inicial"
+          value={numAmostraInicial}
+          onChangeText={setNumAmostraInicial}
+          validationSchema={formSchema.shape.numAmostraInicial}
+          error={errors.numAmostraInicial}
+        />
+      ),
+    },
+    {
+      key: "numAmostraFinal",
+      component: (
+        <TextInputWithLabel
+          label="Número da Amostra Final"
+          placeholder="Digite o número da amostra final"
+          value={numAmostraFinal}
+          onChangeText={setNumAmostraFinal}
+          validationSchema={formSchema.shape.numAmostraFinal}
+          error={errors.numAmostraFinal}
+        />
+      ),
+    },
+    {
+      key: "numTubitos",
+      component: (
+        <TextInputWithLabel
+          label="Quantidade de Tubitos"
+          placeholder="Digite a quantidade de tubitos"
+          value={numTubitos}
+          onChangeText={setNumTubitos}
+          validationSchema={formSchema.shape.numTubitos}
+          error={errors.numTubitos}
+        />
+      ),
+    },
+    {
+      key: "numDepositosEliminados",
+      component: (
+        <TextInputWithLabel
+          label="Depósitos Eliminados"
+          placeholder="Digite o número de depósitos eliminados"
+          value={numDepositosEliminados}
+          onChangeText={setNumDepositosEliminados}
+          validationSchema={formSchema.shape.numDepositosEliminados}
+          error={errors.numDepositosEliminados}
+        />
+      ),
+    },
+    {
+      key: "tratamentoFocal",
+      component: (
+        <TextInputWithLabel
+          label="Tratamento Focal"
+          placeholder="Digite os detalhes do tratamento focal"
+          value={tratamentoFocal}
+          onChangeText={setTratamentoFocal}
+          validationSchema={formSchema.shape.tratamentoFocal}
+          error={errors.tratamentoFocal}
+        />
+      ),
+    },
+    {
+      key: "tratamentoPerifocal",
+      component: (
+        <TextInputWithLabel
+          label="Tratamento Perifocal"
+          placeholder="Digite os detalhes do tratamento perifocal"
+          value={tratamentoPerifocal}
+          onChangeText={setTratamentoPerifocal}
+          validationSchema={formSchema.shape.tratamentoPerifocal}
+          error={errors.tratamentoPerifocal}
+        />
+      ),
+    },
+
+    {
+      key: "submit",
+      component: (
+        <Button
+          title={isSubmitting ? "Enviando..." : "Enviar"}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        />
+      ),
+    },
+  ];
 
   return (
-    <ScrollView contentContainerStyle={formStyles.container}>
-      <LocationInfo onLocationUpdate={setLocation} />
-      <TextInputWithLabel
-        label="Município"
-        placeholder="Digite o nome do município"
-        value={municipio}
-        validationSchema={municipioSchema}
-        onChangeText={setMunicipio}
-      />
-      <TextInputWithLabel
-        label="Código e Nome da Localidade"
-        placeholder="Digite o código e nome da localidade"
-        value={localidade}
-        validationSchema={localidadeSchema}
-        onChangeText={setLocalidade}
-      />
-      <DropdownWithLabel
-        label="Atividade"
-        options={[
-          { label: "1- LI", value: "1" },
-          { label: "2- LI+T", value: "2" },
-          { label: "3- PE", value: "3" },
-          { label: "4- T", value: "4" },
-          { label: "5- DF", value: "5" },
-          { label: "6- PVE", value: "6" },
-        ]}
-        validationSchema={atividadeSchema}
-        onChangeValue={(value) => {
-          setAtividade(value);
-          setErrors((prev) => ({ ...prev, activity: "" }));
-        }}
-        value={atividade}
-      />
-      <DropdownWithLabel
-        label="Categoria da Localidade"
-        options={[
-          { label: "Bairro (BIR)", value: "BIR" },
-          { label: "Povoado (PV)", value: "PV" },
-        ]}
-        value={categoria}
-        onChangeValue={setCategoria}
-        validationSchema={categoriaSchema}
-      />
-      <TextInputWithLabel
-        label="Zona"
-        placeholder="Digite o número da zona"
-        value={zona}
-        onChangeText={setZona}
-        validationSchema={zonaSchema}
-      />
-      <DropdownWithLabel
-        label="Tipo"
-        options={[
-          { label: "1 - Sede", value: "1" },
-          { label: "2 - Outros", value: "2" },
-        ]}
-        value={tipo}
-        onChangeValue={setTipo}
-        validationSchema={tipoSchema}
-      />
-      <DropdownWithLabel
-        label="Concluída"
-        options={[
-          { label: "Sim (S)", value: "S" },
-          { label: "Não (N)", value: "N" },
-        ]}
-        value={concluida}
-        onChangeValue={setConcluida}
-        validationSchema={concluidaSchema}
-      />
-      <DateTimePickerWithLabel
-        label="Data da Atividade"
-        value={dataAtividade}
-        onChange={setDataAtividade}
-      />
-      <TextInputWithLabel
-        label="Hora de Entrada"
-        placeholder="Ex: 08:20"
-        value={horaEntrada}
-        onChangeText={handleHoraEntradaChange}
-        validationSchema={horaEntradaSchema}
-      />
-      <TextInputWithLabel
-        label="Ciclo/Ano"
-        placeholder="Digite o ciclo e ano"
-        value={cicloAno}
-        onChangeText={setCicloAno}
-        validationSchema={cicloAnoSchema}
-      />
-
-      {/* Entomological Research/Treatment */}
-      <TextInputWithLabel
-        label="Número do Quarteirão"
-        placeholder="Digite o número do quarteirão"
-        value={quarteirao}
-        onChangeText={setQuarteirao}
-        validationSchema={quarteiraoSchema}
-      />
-      <TextInputWithLabel
-        label="Sequência"
-        placeholder="Digite a sequência"
-        value={sequencia}
-        onChangeText={setSequencia}
-        validationSchema={sequenciaSchema}
-      />
-      <TextInputWithLabel
-        label="Lado"
-        placeholder="Digite o lado"
-        value={lado}
-        onChangeText={setLado}
-        validationSchema={ladoSchema}
-      />
-      <TextInputWithLabel
-        label="Nome do Logradouro"
-        placeholder="Digite o nome do logradouro"
-        value={logradouro}
-        onChangeText={setLogradouro}
-        validationSchema={logradouroSchema}
-      />
-      <TextInputWithLabel
-        label="Número"
-        placeholder="Digite o número"
-        value={numero}
-        onChangeText={setNumero}
-        validationSchema={numeroSchema}
-      />
-      <TextInputWithLabel
-        label="Complemento"
-        placeholder="Digite o complemento"
-        value={complemento}
-        onChangeText={setComplemento}
-        validationSchema={complementoSchema}
-      />
-      <DropdownWithLabel
-        label="Tipo do Imóvel"
-        options={[
-          { label: "Residência (R)", value: "R" },
-          { label: "Comércio (C)", value: "C" },
-          { label: "Terreno Baldio (TB)", value: "TB" },
-          { label: "Ponto Estratégico (PE)", value: "PE" },
-          { label: "Outro (O)", value: "O" },
-        ]}
-        value={tipoImovel}
-        onChangeValue={setTipoImovel}
-        validationSchema={tipoImovelSchema}
-      />
-      <DropdownWithLabel
-        label="Visita"
-        options={[
-          { label: "Normal (N)", value: "N" },
-          { label: "Recuperação (R)", value: "R" },
-        ]}
-        value={visita}
-        onChangeValue={setVisita}
-        validationSchema={visitaSchema}
-      />
-      <DropdownWithLabel
-        label="Pendência"
-        options={[
-          { label: "Recusado (R)", value: "R" },
-          { label: "Fechado (F)", value: "F" },
-          { label: "Sem Pendência", value: null },
-
-        ]}
-        value={pendencia}
-        onChangeValue={setPendencia}
-        validationSchema={pendenciaSchema}
-      />
-      <TextInputWithLabel
-        label="Número de Depósitos Inspecionados"
-        placeholder="Digite o número de depósitos inspecionados"
-        value={numDepositos}
-        onChangeText={setNumDepositos}
-        validationSchema={numDepositosSchema}
-      />
-      <TextInputWithLabel
-        label="Número da Amostra Inicial"
-        placeholder="Digite o número da amostra inicial"
-        value={numAmostraInicial}
-        onChangeText={setNumAmostraInicial}
-        validationSchema={numAmostraInicialSchema}
-      />
-      <TextInputWithLabel
-        label="Número da Amostra Final"
-        placeholder="Digite o número da amostra final"
-        value={numAmostraFinal}
-        onChangeText={setNumAmostraFinal}
-        validationSchema={numAmostraFinalSchema}
-      />
-      <TextInputWithLabel
-        label="Quantidade de Tubitos"
-        placeholder="Digite a quantidade de tubitos"
-        value={numTubitos}
-        onChangeText={setNumTubitos}
-        validationSchema={numTubitosSchema}
-      />
-      <TextInputWithLabel
-        label="Depósitos Eliminados"
-        placeholder="Digite o número de depósitos eliminados"
-        value={numDepositosEliminados}
-        onChangeText={setNumDepositosEliminados}
-        validationSchema={numDepositosEliminadosSchema}
-      />
-      <TextInputWithLabel
-        label="Tratamento Focal"
-        placeholder="Digite os detalhes do tratamento focal"
-        value={tratamentoFocal}
-        onChangeText={setTratamentoFocal}
-        validationSchema={tratamentoFocalSchema}
-      />
-      <TextInputWithLabel
-        label="Tratamento Perifocal"
-        placeholder="Digite os detalhes do tratamento perifocal"
-        value={tratamentoPerifocal}
-        onChangeText={setTratamentoPerifocal}
-        validationSchema={tratamentoPerifocalSchema}
-      />
-      <Button
-        title={isSubmitting ? "Processing..." : "Submit"}
-        onPress={handleSubmit}
-        disabled={isSubmitting}
-      />
-    </ScrollView>
+    <FlatList
+      data={formFields}
+      keyExtractor={(item) => item.key}
+      renderItem={({ item }) => item.component}
+      contentContainerStyle={formStyles.container}
+    />
   );
 };
-
-
 
 export default Form;
