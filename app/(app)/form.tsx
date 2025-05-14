@@ -16,7 +16,6 @@ import DepositsInput from "../../components/DepositsInput";
 import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "../../firebaseConfig";
 
-
 interface Deposit {
   sigla: string;
   quantidade: string;
@@ -152,11 +151,10 @@ const Form = () => {
   });
 
   useEffect(() => {
-
     const fetchMunicipio = async () => {
       const auth = getAuth();
       const user = auth.currentUser;
-  
+
       if (user) {
         const userDoc = await getDoc(doc(firestore, "users", user.uid));
         if (userDoc.exists()) {
@@ -398,20 +396,42 @@ const Form = () => {
         />
       ),
     },
+    // {
+    //   key: "concluida",
+    //   component: (
+    //     <DropdownWithLabel
+    //       label="Concluída"
+    //       options={[
+    //         { label: "Sim (S)", value: "S" },
+    //         { label: "Não (N)", value: "N" },
+    //       ]}
+    //       value={concluida}
+    //       onChangeValue={setConcluida}
+    //       validationSchema={formSchema.shape.concluida}
+    //       error={errors.concluida}
+    //     />
+    //   ),
+    // },
     {
-      key: "concluida",
+      key: "concluidaRadio",
       component: (
-        <DropdownWithLabel
-          label="Concluída"
-          options={[
-            { label: "Sim (S)", value: "S" },
-            { label: "Não (N)", value: "N" },
-          ]}
-          value={concluida}
-          onChangeValue={setConcluida}
-          validationSchema={formSchema.shape.concluida}
-          error={errors.concluida}
-        />
+        <>
+          <Text style={formStyles.label}>Concluída</Text>
+          <RadioButton
+            options={[
+              { label: "Sim (S)", value: "S" },
+              { label: "Não (N)", value: "N" },
+            ]}
+            selectedValue={concluida ?? undefined}
+            onSelect={(value: string | null) => {
+              setConcluida(value);
+              setErrors((prev) => ({ ...prev, concluida: "" }));
+            }}
+          />
+          {errors.concluida && (
+            <Text style={formStyles.errorText}>{errors.concluida}</Text>
+          )}
+        </>
       ),
     },
     {
@@ -609,6 +629,7 @@ const Form = () => {
       key: "depositsInput",
       component: (
         <DepositsInput
+          value={numDepositos}
           onChange={(deposits) => {
             setNumDepositos(deposits);
             setErrors((prev) => ({ ...prev, numDepositos: "" })); // Limpa o erro

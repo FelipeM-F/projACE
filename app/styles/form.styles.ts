@@ -8,6 +8,12 @@ const formStyles = StyleSheet.create({
     padding: theme.spacing.large,
     backgroundColor: theme.colors.light,
   },
+  label: {
+    fontSize: theme.fontSizes.large,
+    fontWeight: "bold",
+    color: theme.colors.text,
+    marginBottom: theme.spacing.small,
+  },
   button: {
     backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.medium,

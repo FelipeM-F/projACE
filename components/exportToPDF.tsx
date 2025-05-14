@@ -2,6 +2,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 import { Visit } from "../app/(app)/context/VisitContext";
+import { compileWeeklyReport } from "../utils/dateUtils";
 
 export const exportToPDF = async (date: string, visits: Visit[]) => {
   console.log(visits);
@@ -183,7 +184,10 @@ export const exportToPDF = async (date: string, visits: Visit[]) => {
                     ${
                       Array.isArray(visit.numDepositos)
                         ? visit.numDepositos
-                            .map((deposit) => `${deposit.sigla}: ${deposit.quantidade}`)
+                            .map(
+                              (deposit) =>
+                                `${deposit.sigla}: ${deposit.quantidade}`
+                            )
                             .join(", ")
                         : "N/A"
                     }
@@ -232,6 +236,7 @@ export const exportToPDF = async (date: string, visits: Visit[]) => {
     Alert.alert("Error", "Falha ao exportar para PDF.");
   }
 };
+
 
 // Helper functions
 const getActivityLabel = (activity: string) => {

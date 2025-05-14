@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
 import theme from "../app/styles/theme";
 
 interface Deposit {
@@ -9,20 +16,31 @@ interface Deposit {
 
 interface DepositsInputProps {
   onChange: (deposits: Deposit[]) => void;
+  value?: Deposit[];
   error?: string;
 }
 
-const DepositsInput: React.FC<DepositsInputProps> = ({ onChange, error }) => {
-  const [deposits, setDeposits] = useState<Deposit[]>([]);
+const DepositsInput: React.FC<DepositsInputProps> = ({
+  onChange,
+  error,
+  value,
+}) => {
+  const [deposits, setDeposits] = useState<Deposit[]>(value || []);
   const [selectedSigla, setSelectedSigla] = useState<string | null>(null);
   const [quantidade, setQuantidade] = useState("");
 
   const siglas = ["A1", "A2", "B", "C", "D1", "D2", "E"];
 
+  useEffect(() => {
+    setDeposits(value || []);
+  }, [value]);
+
   const handleAddDeposit = () => {
     if (selectedSigla && quantidade) {
       const updatedDeposits = [...deposits];
-      const existingIndex = updatedDeposits.findIndex((d) => d.sigla === selectedSigla);
+      const existingIndex = updatedDeposits.findIndex(
+        (d) => d.sigla === selectedSigla
+      );
 
       if (existingIndex !== -1) {
         updatedDeposits[existingIndex].quantidade = quantidade; // Atualiza a quantidade se a sigla já existir
@@ -39,7 +57,9 @@ const DepositsInput: React.FC<DepositsInputProps> = ({ onChange, error }) => {
 
   const renderDepositItem = ({ item }: { item: Deposit }) => (
     <View style={styles.depositItem}>
-      <Text style={styles.depositText}>{item.sigla}: {item.quantidade}</Text>
+      <Text style={styles.depositText}>
+        {item.sigla}: {item.quantidade}
+      </Text>
     </View>
   );
 
@@ -86,7 +106,7 @@ const DepositsInput: React.FC<DepositsInputProps> = ({ onChange, error }) => {
         keyExtractor={(item) => item.sigla}
         renderItem={renderDepositItem}
         style={styles.depositList}
-        nestedScrollEnabled={true} 
+        nestedScrollEnabled={true}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
