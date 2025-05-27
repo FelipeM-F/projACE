@@ -9,6 +9,7 @@ const TextInputWithLabel = ({
   onChangeText,
   error,
   value,
+  keyboardType = "default", // Adicione aqui
 }: {
   label: string;
   placeholder: string;
@@ -16,6 +17,7 @@ const TextInputWithLabel = ({
   onChangeText: (text: string) => void;
   error?: string;
   value?: string;
+  keyboardType?: "default" | "numeric" | "email-address" | "phone-pad"; // Adicione aqui
 }) => {
   const [internalValue, setInternalValue] = useState(value || "");
 

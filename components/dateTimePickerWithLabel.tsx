@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Button } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import theme from "../app/styles/theme";
+import formStyles from "@/app/styles/form.styles";
 
 interface DateTimePickerWithLabelProps {
   label: string;
@@ -8,7 +10,11 @@ interface DateTimePickerWithLabelProps {
   onChange: (date: Date) => void;
 }
 
-const DateTimePickerWithLabel: React.FC<DateTimePickerWithLabelProps> = ({ label, value, onChange }) => {
+const DateTimePickerWithLabel: React.FC<DateTimePickerWithLabelProps> = ({
+  label,
+  value,
+  onChange,
+}) => {
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
 
@@ -32,18 +38,32 @@ const DateTimePickerWithLabel: React.FC<DateTimePickerWithLabelProps> = ({ label
     }
   };
 
-
-
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <Button onPress={() => setShowDate(true)} title={`Dia: ${value.toLocaleDateString()}`} />
-      <Button onPress={() => setShowTime(true)} title={`Hora: ${value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`} />
+      <Text style={formStyles.label}>{label}</Text>
+      <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setShowDate(true)}
+        >
+          <Text style={styles.buttonText}>
+            Dia: {value.toLocaleDateString("pt-BR")}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setShowTime(true)}
+        >
+          <Text style={styles.buttonText}>
+            Hora: {value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+          </Text>
+        </TouchableOpacity>
+      </View>
       {showDate && (
         <DateTimePicker
           value={value}
           mode="date"
-          display="default"
+          display="calendar"
           onChange={handleDateChange}
         />
       )}
@@ -51,7 +71,7 @@ const DateTimePickerWithLabel: React.FC<DateTimePickerWithLabelProps> = ({ label
         <DateTimePicker
           value={value}
           mode="time"
-          display="default"
+          display="spinner"
           onChange={handleTimeChange}
           is24Hour={true}
         />
@@ -64,10 +84,26 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
   },
-  label: {
-    marginBottom: 5,
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: theme.borderRadius.medium,
+    alignItems: "center",
+    marginRight: 8,
+    marginBottom: 4,
+    elevation: 2,
+  },
+  buttonText: {
+    color: theme.colors.white,
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
 });
 

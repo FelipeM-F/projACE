@@ -15,6 +15,7 @@ import RadioButton from "../../components/RadioButton";
 import DepositsInput from "../../components/DepositsInput";
 import { doc, getDoc } from "firebase/firestore";
 import { firestore } from "../../firebaseConfig";
+import { TratamentoInput } from "@/components/TratamentoInput";
 
 interface Deposit {
   sigla: string;
@@ -43,6 +44,7 @@ const Form = () => {
   const [concluida, setConcluida] = useState<string | null>(null);
   const [dataAtividade, setDataAtividade] = useState(new Date());
   const [cicloAno, setCicloAno] = useState("");
+  const [cicloNumero, setCicloNumero] = useState("");
   const [atividade, setAtividade] = useState<string | null>(null);
   const [quarteirao, setQuarteirao] = useState("");
   const [sequencia, setSequencia] = useState("");
@@ -61,8 +63,15 @@ const Form = () => {
   const [numAmostraFinal, setNumAmostraFinal] = useState("");
   const [numTubitos, setNumTubitos] = useState("");
   const [numDepositosEliminados, setNumDepositosEliminados] = useState("");
-  const [tratamentoFocal, setTratamentoFocal] = useState("");
-  const [tratamentoPerifocal, setTratamentoPerifocal] = useState("");
+  const [tratamentoFocal, setTratamentoFocal] = useState({
+    tipo: "",
+    quantidadeGramas: "",
+    quantidadeDepTrat: "",
+  });
+  const [tratamentoPerifocal, setTratamentoPerifocal] = useState({
+    tipo: "",
+    quantidadeCargas: "",
+  });
 
   const atividadeSchema = z.enum(["1", "2", "3", "4", "5", "6"], {
     errorMap: () => ({ message: "Please select a valid activity" }),
@@ -177,6 +186,7 @@ const Form = () => {
         setConcluida(visit.concluida);
         setDataAtividade(new Date(visit.dataAtividade));
         setCicloAno(visit.cicloAno);
+        setCicloNumero(visit.cicloAno ? visit.cicloAno.split("-")[0] : "");
         setAtividade(visit.atividade);
         setQuarteirao(visit.quarteirao);
         setSequencia(visit.sequencia);
@@ -193,8 +203,35 @@ const Form = () => {
         setNumAmostraFinal(visit.numAmostraFinal);
         setNumTubitos(visit.numTubitos);
         setNumDepositosEliminados(visit.numDepositosEliminados);
-        setTratamentoFocal(visit.tratamentoFocal);
-        setTratamentoPerifocal(visit.tratamentoPerifocal);
+        setTratamentoFocal(() => {
+          if (typeof visit.tratamentoFocal === "string") {
+            try {
+              const parsed = JSON.parse(visit.tratamentoFocal);
+              return parsed;
+            } catch {
+              return {
+                tipo: visit.tratamentoFocal,
+                quantidadeGramas: "",
+                quantidadeDepTrat: "",
+              };
+            }
+          }
+          return visit.tratamentoFocal;
+        });
+        setTratamentoPerifocal(() => {
+          if (typeof visit.tratamentoPerifocal === "string") {
+            try {
+              const parsed = JSON.parse(visit.tratamentoPerifocal);
+              return parsed;
+            } catch {
+              return {
+                tipo: visit.tratamentoPerifocal,
+                quantidadeCargas: "",
+              };
+            }
+          }
+          return visit.tratamentoPerifocal;
+        });
       }
     } else {
       fetchMunicipio();
@@ -204,6 +241,15 @@ const Form = () => {
   useEffect(() => {
     setHoraEntrada(formatTimeToHHMM(dataAtividade));
   }, [dataAtividade]);
+
+  useEffect(() => {
+    if (cicloNumero && dataAtividade) {
+      const ano = dataAtividade.getFullYear();
+      setCicloAno(`${cicloNumero.padStart(2, "0")}-${ano}`);
+    } else {
+      setCicloAno("");
+    }
+  }, [cicloNumero, dataAtividade]);
 
   const handleHoraEntradaChange = (text: string) => {
     setHoraEntrada(text);
@@ -250,8 +296,8 @@ const Form = () => {
         numAmostraFinal,
         numTubitos,
         numDepositosEliminados,
-        tratamentoFocal,
-        tratamentoPerifocal,
+        tratamentoFocal: JSON.stringify(tratamentoFocal),
+        tratamentoPerifocal: JSON.stringify(tratamentoPerifocal),
       };
 
       formSchema.parse(formData);
@@ -319,23 +365,27 @@ const Form = () => {
     {
       key: "atividade",
       component: (
-        <DropdownWithLabel
-          label="Atividade"
-          options={[
-            { label: "1- LI", value: "1" },
-            { label: "2- LI+T", value: "2" },
-            { label: "3- PE", value: "3" },
-            { label: "4- T", value: "4" },
-            { label: "5- DF", value: "5" },
-            { label: "6- PVE", value: "6" },
-          ]}
-          validationSchema={atividadeSchema}
-          onChangeValue={(value) => {
-            setAtividade(value);
-            setErrors((prev) => ({ ...prev, activity: "" }));
-          }}
-          value={atividade}
-        />
+        <>
+          <Text style={formStyles.label}>Atividade</Text>
+          <RadioButton
+            options={[
+              { label: "1- LI", value: "1" },
+              { label: "2- LI+T", value: "2" },
+              { label: "3- PE", value: "3" },
+              { label: "4- T", value: "4" },
+              { label: "5- DF", value: "5" },
+              { label: "6- PVE", value: "6" },
+            ]}
+            selectedValue={atividade ?? undefined}
+            onSelect={(value: string | null) => {
+              setAtividade(value);
+              setErrors((prev) => ({ ...prev, atividade: "" }));
+            }}
+          />
+          {errors.atividade && (
+            <Text style={formStyles.errorText}>{errors.atividade}</Text>
+          )}
+        </>
       ),
     },
     {
@@ -354,17 +404,23 @@ const Form = () => {
     {
       key: "categoria",
       component: (
-        <DropdownWithLabel
-          label="Categoria da Localidade"
-          options={[
-            { label: "Bairro (BIR)", value: "BIR" },
-            { label: "Povoado (PV)", value: "PV" },
-          ]}
-          value={categoria}
-          onChangeValue={setCategoria}
-          validationSchema={formSchema.shape.categoria}
-          error={errors.categoria}
-        />
+        <>
+          <Text style={formStyles.label}>Categoria da Localidade</Text>
+          <RadioButton
+            options={[
+              { label: "Bairro (BIR)", value: "BIR" },
+              { label: "Povoado (PV)", value: "PV" },
+            ]}
+            selectedValue={categoria ?? undefined}
+            onSelect={(value: string | null) => {
+              setCategoria(value);
+              setErrors((prev) => ({ ...prev, categoria: "" }));
+            }}
+          />
+          {errors.categoria && (
+            <Text style={formStyles.errorText}>{errors.categoria}</Text>
+          )}
+        </>
       ),
     },
     {
@@ -383,17 +439,23 @@ const Form = () => {
     {
       key: "tipo",
       component: (
-        <DropdownWithLabel
-          label="Tipo"
-          options={[
-            { label: "1 - Sede", value: "1" },
-            { label: "2 - Outros", value: "2" },
-          ]}
-          value={tipo}
-          onChangeValue={setTipo}
-          validationSchema={formSchema.shape.tipo}
-          error={errors.tipo}
-        />
+        <>
+          <Text style={formStyles.label}>Tipo</Text>
+          <RadioButton
+            options={[
+              { label: "1 - Sede", value: "1" },
+              { label: "2 - Outros", value: "2" },
+            ]}
+            selectedValue={tipo ?? undefined}
+            onSelect={(value: string | null) => {
+              setTipo(value);
+              setErrors((prev) => ({ ...prev, tipo: "" }));
+            }}
+          />
+          {errors.concluida && (
+            <Text style={formStyles.errorText}>{errors.tipo}</Text>
+          )}
+        </>
       ),
     },
     // {
@@ -445,32 +507,29 @@ const Form = () => {
       ),
     },
     {
-      key: "horaEntrada",
+      key: "cicloNumero",
       component: (
         <TextInputWithLabel
-          label="Hora de Entrada"
-          placeholder="Ex: 08:20"
-          value={horaEntrada}
-          onChangeText={handleHoraEntradaChange}
-          validationSchema={formSchema.shape.horaEntrada}
-          error={errors.horaEntrada}
-        />
-      ),
-    },
-    {
-      key: "cicloAno",
-      component: (
-        <TextInputWithLabel
-          label="Ciclo/Ano"
-          placeholder="Digite o ciclo e ano"
-          value={cicloAno}
-          onChangeText={setCicloAno}
-          validationSchema={formSchema.shape.cicloAno}
+          label="Número do Ciclo"
+          placeholder="Digite o número do ciclo"
+          value={cicloNumero}
+          onChangeText={setCicloNumero}
+          validationSchema={z.string().regex(/^\d+$/, {
+            message: "O ciclo deve conter apenas números",
+          })}
           error={errors.cicloAno}
         />
       ),
     },
-
+    {
+      key: "cicloAnoInfo",
+      component: (
+        <Text style={{ color: "#888", marginBottom: 10 }}>
+          Ciclo/Ano gerado:{" "}
+          <Text style={{ fontWeight: "bold" }}>{cicloAno || "--"}</Text>
+        </Text>
+      ),
+    },
     {
       key: "quarteirao",
       component: (
@@ -529,6 +588,7 @@ const Form = () => {
         <TextInputWithLabel
           label="Número"
           placeholder="Digite o número"
+          keyboardType="numeric"
           value={numero}
           onChangeText={setNumero}
           validationSchema={formSchema.shape.numero}
@@ -546,25 +606,6 @@ const Form = () => {
           onChangeText={setComplemento}
           validationSchema={formSchema.shape.complemento}
           error={errors.complemento}
-        />
-      ),
-    },
-    {
-      key: "tipoImovelDropdown",
-      component: (
-        <DropdownWithLabel
-          label="Tipo do Imóvel"
-          options={[
-            { label: "Residência (R)", value: "R" },
-            { label: "Comércio (C)", value: "C" },
-            { label: "Terreno Baldio (TB)", value: "TB" },
-            { label: "Ponto Estratégico (PE)", value: "PE" },
-            { label: "Outro (O)", value: "O" },
-          ]}
-          value={tipoImovel}
-          onChangeValue={setTipoImovel}
-          validationSchema={formSchema.shape.tipoImovel}
-          error={errors.tipoImovel}
         />
       ),
     },
@@ -595,17 +636,22 @@ const Form = () => {
     {
       key: "visita",
       component: (
-        <DropdownWithLabel
-          label="Visita"
-          options={[
-            { label: "Normal (N)", value: "N" },
-            { label: "Recuperação (R)", value: "R" },
-          ]}
-          value={visita}
-          onChangeValue={setVisita}
-          validationSchema={formSchema.shape.visita}
-          error={errors.visita}
-        />
+        <>
+          <RadioButton
+            options={[
+              { label: "Normal (N)", value: "N" },
+              { label: "Recuperação (R)", value: "R" },
+            ]}
+            selectedValue={visita ?? undefined}
+            onSelect={(value: string | null) => {
+              setVisita(value);
+              setErrors((prev) => ({ ...prev, visita: "" }));
+            }}
+          />
+          {errors.visita && (
+            <Text style={formStyles.errorText}>{errors.visita}</Text>
+          )}
+        </>
       ),
     },
     {
@@ -691,28 +737,14 @@ const Form = () => {
       ),
     },
     {
-      key: "tratamentoFocal",
+      key: "tratamentoFocalPerifocal",
       component: (
-        <TextInputWithLabel
-          label="Tratamento Focal"
-          placeholder="Digite os detalhes do tratamento focal"
-          value={tratamentoFocal}
-          onChangeText={setTratamentoFocal}
-          validationSchema={formSchema.shape.tratamentoFocal}
-          error={errors.tratamentoFocal}
-        />
-      ),
-    },
-    {
-      key: "tratamentoPerifocal",
-      component: (
-        <TextInputWithLabel
-          label="Tratamento Perifocal"
-          placeholder="Digite os detalhes do tratamento perifocal"
-          value={tratamentoPerifocal}
-          onChangeText={setTratamentoPerifocal}
-          validationSchema={formSchema.shape.tratamentoPerifocal}
-          error={errors.tratamentoPerifocal}
+        <TratamentoInput
+          label="Tratamento"
+          focal={tratamentoFocal}
+          setFocal={setTratamentoFocal}
+          perifocal={tratamentoPerifocal}
+          setPerifocal={setTratamentoPerifocal}
         />
       ),
     },

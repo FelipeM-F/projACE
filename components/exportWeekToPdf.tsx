@@ -14,9 +14,8 @@ export const exportWeeklyToPDF = async (visits: Visit[]) => {
         : v.dataAtividade,
   }));
 
-  console.log("Visitas", visitsWithDate);
   const weeklyReports = compileWeeklyReport(visitsWithDate);
-  console.log("Visitas por semana", weeklyReports);
+
   const htmlContentWeek = `
     <html>
       <head>
@@ -30,8 +29,41 @@ export const exportWeeklyToPDF = async (visits: Visit[]) => {
       <body>
         <h2>FAD-07 - Registro Diário do Serviço Antivetorial</h2>
 ${weeklyReports
-  .map(
-    (report) => `
+  .map((report) => {
+    let focal = { tipo: "", quantidadeGramas: "", quantidadeDepTrat: "" };
+    let perifocal = { tipo: "", quantidadeCargas: "" };
+    try {
+      if (typeof report.tratamentoFocal === "string" && report.tratamentoFocal) {
+        focal = JSON.parse(report.tratamentoFocal);
+      }
+    } catch {}
+    try {
+      if (typeof report.tratamentoPerifocal === "string" && report.tratamentoPerifocal) {
+        perifocal = JSON.parse(report.tratamentoPerifocal);
+      }
+    } catch {}
+
+    // Garante que todos os campos de depósitos por tipo estejam presentes
+    const depositSiglas = ["A1", "A2", "B", "C", "D1", "D2", "E"];
+    const depositosPorTipo = depositSiglas.reduce(
+      (acc, sigla) => ({
+        ...acc,
+        [sigla]: report.depositosPorTipo?.[sigla] ?? 0,
+      }),
+      {} as { [sigla: string]: number }
+    );
+
+    // Garante que todos os tipos de imóvel estejam presentes
+    const tiposImovelSiglas = ["R", "C", "TB", "PE", "O"];
+    const tiposImovel = tiposImovelSiglas.reduce(
+      (acc, tipo) => ({
+        ...acc,
+        [tipo]: report.tiposImovel?.[tipo] ?? 0,
+      }),
+      {} as { [tipo: string]: number }
+    );
+
+    return `
       <h3>
         Semana: ${report.weekKey}
         <span style="font-weight:normal;">
@@ -39,20 +71,20 @@ ${weeklyReports
         </span>
       </h3>
       <table>
-        <tr><td><strong>Município:</strong></td><td>${report.municipio}</td></tr>
-        <tr><td><strong>Localidade:</strong></td><td>${report.localidade}</td></tr>
-        <tr><td><strong>Zona:</strong></td><td>${report.zona}</td></tr>
-        <tr><td><strong>Categoria:</strong></td><td>${report.categoria}</td></tr>
-        <tr><td><strong>Tipo:</strong></td><td>${report.tipo}</td></tr>
-        <tr><td><strong>Ciclo/Ano:</strong></td><td>${report.cicloAno}</td></tr>
-        <tr><td><strong>Atividade:</strong></td><td>${report.atividade}</td></tr>
-        <tr><td><strong>Data início:</strong></td><td>${new Date(report.dataInicio).toLocaleDateString()}</td></tr>
-        <tr><td><strong>Data final:</strong></td><td>${new Date(report.dataFinal).toLocaleDateString()}</td></tr>
-        <tr><td><strong>Quarteirões concluídos:</strong></td><td>${report.quarteiroes}</td></tr>
+        <tr><td><strong>Município:</strong></td><td>${report.municipio || "-"}</td></tr>
+        <tr><td><strong>Localidade:</strong></td><td>${report.localidade || "-"}</td></tr>
+        <tr><td><strong>Zona:</strong></td><td>${report.zona || "-"}</td></tr>
+        <tr><td><strong>Categoria:</strong></td><td>${report.categoria || "-"}</td></tr>
+        <tr><td><strong>Tipo:</strong></td><td>${report.tipo || "-"}</td></tr>
+        <tr><td><strong>Ciclo/Ano:</strong></td><td>${report.cicloAno || "-"}</td></tr>
+        <tr><td><strong>Atividade:</strong></td><td>${report.atividade || "-"}</td></tr>
+        <tr><td><strong>Data início:</strong></td><td>${report.dataInicio ? new Date(report.dataInicio).toLocaleDateString() : "-"}</td></tr>
+        <tr><td><strong>Data final:</strong></td><td>${report.dataFinal ? new Date(report.dataFinal).toLocaleDateString() : "-"}</td></tr>
+        <tr><td><strong>Quarteirões concluídos:</strong></td><td>${report.quarteiroes ?? 0}</td></tr>
         <tr>
           <td><strong>Imóveis por tipo:</strong></td>
           <td>
-            ${Object.entries(report.tiposImovel)
+            ${Object.entries(tiposImovel)
               .map(([tipo, qtd]) => `${tipo}: ${qtd}`)
               .join(", ")}
           </td>
@@ -60,40 +92,47 @@ ${weeklyReports
         <tr>
           <td><strong>Depósitos Inspecionados:</strong></td>
           <td>
-            ${Object.entries(report.depositosPorTipo)
+            ${Object.entries(depositosPorTipo)
               .map(([sigla, qtd]) => `${sigla}: ${qtd}`)
               .join(", ")}
           </td>
         </tr>
         <tr>
           <td><strong>Depósitos Eliminados:</strong></td>
-          <td>${report.depositosEliminados}</td>
+          <td>${report.depositosEliminados ?? 0}</td>
         </tr>
         <tr>
           <td><strong>Tubitos Coletados:</strong></td>
-          <td>${report.tubitos}</td>
+          <td>${report.tubitos ?? 0}</td>
         </tr>
         <tr>
           <td><strong>Tratamento Focal:</strong></td>
-          <td>${report.tratamentoFocal}</td>
+          <td>
+            Tipo: ${focal.tipo || "-"}<br/>
+            Qtde. (g): ${focal.quantidadeGramas || "0"}<br/>
+            Qtde. dep. trat.: ${focal.quantidadeDepTrat || "0"}
+          </td>
         </tr>
         <tr>
           <td><strong>Tratamento Perifocal:</strong></td>
-          <td>${report.tratamentoPerifocal}</td>
+          <td>
+            Tipo Adulticida: ${perifocal.tipo || "-"}<br/>
+            Qtde. cargas: ${perifocal.quantidadeCargas || "0"}
+          </td>
         </tr>
         <tr>
           <td><strong>Pendências:</strong></td>
           <td>
-            Recusado: ${report.pendencias.recusado}, Fechado: ${report.pendencias.fechado}
+            Recusado: ${report.pendencias?.recusado ?? 0}, Fechado: ${report.pendencias?.fechado ?? 0}
           </td>
         </tr>
         <tr>
           <td><strong>Visitas Concluídas:</strong></td>
-          <td>${report.concluidas}</td>
+          <td>${report.concluidas ?? 0}</td>
         </tr>
       </table>
-    `
-  )
+    `;
+  })
   .join("")}
       </body>
     </html>
@@ -102,8 +141,8 @@ ${weeklyReports
   try {
     const { uri } = await Print.printToFileAsync({
       html: htmlContentWeek,
-      width: 595, // A4 width in pixels (210mm)
-      height: 842, // A4 height in pixels (297mm)
+      width: 595,
+      height: 842,
     });
     await Sharing.shareAsync(uri, { UTI: ".pdf", mimeType: "application/pdf" });
   } catch (error) {

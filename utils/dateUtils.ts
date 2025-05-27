@@ -76,7 +76,7 @@ export function compileWeeklyReport(visits: Visit[]) {
     ];
     console.log("weekVisits", weekVisits);
     const tiposImovel: { [tipo: string]: number } = {};
-    try {      
+    try {
       weekVisits.forEach((v) => {
         console.log("v.tipoImovel", v.tipoImovel);
         if (v.tipoImovel) {
@@ -86,11 +86,11 @@ export function compileWeeklyReport(visits: Visit[]) {
     } catch (e) {
       console.error("Erro ao calcular tiposImovel:", e);
     }
-      
-      // Soma de depósitos inspecionados por tipo
-      const depositSiglas = ["A1", "A2", "B", "C", "D1", "D2", "E"];
-      const depositosPorTipo: { [sigla: string]: number } = {};
-      try {
+
+    // Soma de depósitos inspecionados por tipo
+    const depositSiglas = ["A1", "A2", "B", "C", "D1", "D2", "E"];
+    const depositosPorTipo: { [sigla: string]: number } = {};
+    try {
       depositSiglas.forEach((sigla) => {
         depositosPorTipo[sigla] = 0;
       });
@@ -120,14 +120,10 @@ export function compileWeeklyReport(visits: Visit[]) {
     );
 
     // Soma de imóveis tratados (tratamento focal/perifocal)
-    const tratamentoFocal = weekVisits.reduce(
-      (sum, v) => sum + Number(v.tratamentoFocal || 0),
-      0
-    );
-    const tratamentoPerifocal = weekVisits.reduce(
-      (sum, v) => sum + Number(v.tratamentoPerifocal || 0),
-      0
-    );
+    const tratamentoFocal =
+      weekVisits[weekVisits.length - 1]?.tratamentoFocal || "";
+    const tratamentoPerifocal =
+      weekVisits[weekVisits.length - 1]?.tratamentoPerifocal || "";
 
     // Soma de pendências (Recusado, Fechado)
     const pendencias = {
