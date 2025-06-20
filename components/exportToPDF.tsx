@@ -83,7 +83,7 @@ export const exportToPDF = async (date: string, visits: Visit[]) => {
               </tr>
               <tr>
                 <td><strong>Agente:</strong></td>
-                <td>${visit.userName}</td>
+                <td>${visit.userEmail}</td>
               </tr>
               <tr>
                 <td><strong>Atividade:</strong></td>

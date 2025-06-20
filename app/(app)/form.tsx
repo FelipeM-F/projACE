@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Alert, ScrollView, Text, FlatList } from "react-native";
+import { Button, Alert, ScrollView,KeyboardAvoidingView, Text, FlatList } from "react-native";
 import TextInputWithLabel from "../../components/textInputWithLabel";
 import DropdownWithLabel from "../../components/dropdownWithLabel";
 import DateTimePickerWithLabel from "../../components/dateTimePickerWithLabel";
@@ -111,9 +111,7 @@ const Form = () => {
     logradouro: z
       .string()
       .min(2, { message: "Logradouro deve ter pelo menos 2 caracteres" }),
-    numero: z
-      .string()
-      .regex(/^\d*$/, { message: "Número deve conter apenas números" }),
+    numero: z.string(),
     complemento: z.string().optional(),
     tipoImovel: z.enum(["R", "C", "TB", "PE", "O"], {
       errorMap: () => ({ message: "Selecione um tipo de imóvel válido" }),
@@ -305,13 +303,23 @@ const Form = () => {
       console.log("Validation passed. Preparing data...");
       const auth = getAuth();
       const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Erro", "Usuário não autenticado.");
+        setIsSubmitting(false);
+        return;
+      }
+      const userDoc = await getDoc(doc(firestore, "users", user.uid));
+      const nomeUsuario = userDoc.exists()
+        ? userDoc.data().nome
+        : user.displayName || user.email || "unknown";
 
       const visitData = {
         id: Array.isArray(id) ? id[0] : id || uuidv4(),
         date,
         location,
         userId: user?.uid || "unknown",
-        userName: user?.displayName || "unknown",
+        userEmail: user?.displayName || "unknown",
+        userName: nomeUsuario,
         dataAtividade,
         atividade,
         ...formData,
@@ -613,6 +621,8 @@ const Form = () => {
       key: "tipoImovelRadio",
       component: (
         <>
+          <Text style={formStyles.label}>Tipo de Imóvel</Text>
+
           <RadioButton
             options={[
               { label: "Residência (R)", value: "R" },
@@ -637,6 +647,8 @@ const Form = () => {
       key: "visita",
       component: (
         <>
+          <Text style={formStyles.label}>Tipo de Visita</Text>
+
           <RadioButton
             options={[
               { label: "Normal (N)", value: "N" },
@@ -762,12 +774,18 @@ const Form = () => {
   ];
 
   return (
-    <FlatList
-      data={formFields}
-      keyExtractor={(item) => item.key}
-      renderItem={({ item }) => item.component}
+      <KeyboardAvoidingView
+    style={{ flex: 1 }}
+  >
+    <ScrollView
       contentContainerStyle={formStyles.container}
-    />
+      keyboardShouldPersistTaps="handled"
+    >
+      {formFields.map((field) => (
+        <React.Fragment key={field.key}>{field.component}</React.Fragment>
+      ))}
+    </ScrollView>
+  </KeyboardAvoidingView>
   );
 };
 

@@ -23,6 +23,7 @@ export interface Visit {
   date: Date;
   location: { latitude: number; longitude: number };
   userId: string;
+  userEmail: string;
   userName: string;
   municipio: string;
   localidade: string;
@@ -105,6 +106,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             date: data.date.toDate(),
             location: data.location,
             userId: data.userId,
+            userEmail: data.userEmail,
             userName: data.userName,
             municipio: data.municipio,
             localidade: data.localidade,
@@ -205,7 +207,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
       const docRef = await addDoc(collection(firestore, "visits"), {
         ...visit,
         userId: user.uid,
-        userName: user.email || "Anonymous",
+        userEmail: user.email || "Anonymous",
         date: Timestamp.fromDate(visit.date),
         dataAtividade: Timestamp.fromDate(visit.dataAtividade), // Converte para Timestamp
       });
@@ -214,7 +216,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
         ...visit,
         id: docRef.id,
         userId: user.uid,
-        userName: user.email || "Anonymous",
+        userEmail: user.email || "Anonymous",
       };
 
       // Atualiza o estado local
@@ -234,7 +236,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
         ...visit,
         id: `offline-${uuidv4()}`,
         userId: user.uid,
-        userName: user.email || "Anonymous",
+        userEmail: user.email || "Anonymous",
       };
       setVisits((prev) => [...prev, newVisit]);
       const updatedVisits = [...visits, newVisit];
@@ -259,7 +261,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
       await updateDoc(visitRef, {
         ...updatedVisit,
         userId: user.uid,
-        userName: user.email || "Anonymous",
+        userEmail: user.email || "Anonymous",
         date: Timestamp.fromDate(updatedVisit.date),
         dataAtividade: Timestamp.fromDate(updatedVisit.dataAtividade), // Converte para Timestamp
       });
@@ -270,7 +272,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             ? {
                 ...updatedVisit,
                 userId: user.uid,
-                userName: user.email || "Anonymous",
+                userEmail: user.email || "Anonymous",
               }
             : visit
         )
@@ -282,7 +284,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
           ? {
               ...updatedVisit,
               userId: user.uid,
-              userName: user.email || "Anonymous",
+              userEmail: user.email || "Anonymous",
             }
           : visit
       );
@@ -300,7 +302,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
             ? {
                 ...updatedVisit,
                 userId: user.uid,
-                userName: user.email || "Anonymous",
+                userEmail: user.email || "Anonymous",
               }
             : visit
         )
@@ -310,7 +312,7 @@ export const VisitProvider: React.FC<{ children: React.ReactNode }> = ({
           ? {
               ...updatedVisit,
               userId: user.uid,
-              userName: user.email || "Anonymous",
+              userEmail: user.email || "Anonymous",
             }
           : visit
       );

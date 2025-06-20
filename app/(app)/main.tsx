@@ -2,57 +2,73 @@ import React from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
 import { useVisitContext, Visit } from "./context/VisitContext";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { getDoc, doc } from "firebase/firestore";
 import { firestore } from "../../firebaseConfig";
-import { v4 as uuidv4 } from "uuid";
 import { exportToPDF } from "../../components/exportToPDF";
-import {exportWeeklyToPDF} from "../../components/exportWeekToPdf";
+import { exportWeeklyToPDF } from "../../components/exportWeekToPdf";
 import { exportToXLSX } from "../../components/exportToXLSX";
 import mainStyles from "../styles/main.styles";
 import CustomButton from "../../components/CustomButton";
 import { getAuth } from "firebase/auth";
 import { getEpidemiologicalWeek } from "@/utils/dateUtils";
 
-const LOCAL_STORAGE_KEY = "visits";
-
 const Main = () => {
-  const { visits, deleteVisit, syncVisits } = useVisitContext();
+  const { visits, deleteVisit } = useVisitContext();
   const router = useRouter();
-  const [expandedMonths, setExpandedMonths] = React.useState<{
-    [key: string]: boolean;
-  }>({});
-  const [expandedWeeks, setExpandedWeeks] = React.useState<{
-    [key: string]: boolean;
-  }>({});
-  const [expandedDays, setExpandedDays] = React.useState<{
-    [key: string]: boolean;
-  }>({});
+  const [expandedMonths, setExpandedMonths] = React.useState<
+    Record<string, boolean>
+  >({});
+  const [expandedWeeks, setExpandedWeeks] = React.useState<
+    Record<string, boolean>
+  >({});
+  const [expandedDays, setExpandedDays] = React.useState<
+    Record<string, boolean>
+  >({});
+  const [userProfile, setUserProfile] = React.useState<{
+    perfil: string;
+    municipio: string;
+  } | null>(null);
 
-  const toggleMonth = (month: string) => {
-    setExpandedMonths((prev) => ({ ...prev, [month]: !prev[month] }));
-  };
-  const toggleWeek = (month: string, week: string) => {
-    setExpandedWeeks((prev) => ({
-      ...prev,
-      [month + week]: !prev[month + week],
-    }));
-  };
-  const toggleDay = (month: string, week: string, day: string) => {
-    setExpandedDays((prev) => ({
-      ...prev,
-      [month + week + day]: !prev[month + week + day],
-    }));
-  };
+  // Toggle helpers
+  const toggle = (
+    setter: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
+    key: string
+  ) => setter((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  React.useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) return;
+        const userDoc = await getDoc(doc(firestore, "users", user.uid));
+        setUserProfile(
+          userDoc.exists()
+            ? (userDoc.data() as { perfil: string; municipio: string })
+            : null
+        );
+      } catch (error) {
+        console.error("Erro ao buscar perfil do usuário:", error);
+        setUserProfile(null);
+      }
+    };
+    fetchUserProfile();
+  }, []);
 
   // Agrupa visitas por mês > semana > dia
   const groupedByMonthWeekDay = React.useMemo(() => {
     const auth = getAuth();
     const user = auth.currentUser;
-    if (!user) return {};
+    if (!user || !userProfile) return {};
 
-    const sortedVisits = visits
-      .filter((visit) => visit.dataAtividade && visit.userId === user.uid)
+    const { perfil, municipio } = userProfile;
+    const filteredVisits =
+      perfil === "digitador"
+        ? visits.filter((v) => v.municipio === municipio)
+        : visits.filter((v) => v.userId === user.uid);
+
+    const sortedVisits = filteredVisits
+      .filter((visit) => visit.dataAtividade)
       .map((visit) => ({
         ...visit,
         dataAtividade: new Date(visit.dataAtividade),
@@ -64,24 +80,22 @@ const Main = () => {
       const monthYearKey = `${(date.getMonth() + 1)
         .toString()
         .padStart(2, "0")}/${date.getFullYear()}`;
-      const week = getEpidemiologicalWeek(date);
-      const year = date.getFullYear();
-      const weekKey = `${year}-W${week}`;
+      const weekKey = `${date.getFullYear()}-W${getEpidemiologicalWeek(date)}`;
       const dayKey = `${date.getDate().toString().padStart(2, "0")}/${(
         date.getMonth() + 1
       )
         .toString()
         .padStart(2, "0")}/${date.getFullYear()}`;
 
-      if (!acc[monthYearKey]) acc[monthYearKey] = {};
-      if (!acc[monthYearKey][weekKey]) acc[monthYearKey][weekKey] = {};
-      if (!acc[monthYearKey][weekKey][dayKey])
-        acc[monthYearKey][weekKey][dayKey] = [];
+      acc[monthYearKey] = acc[monthYearKey] || {};
+      acc[monthYearKey][weekKey] = acc[monthYearKey][weekKey] || {};
+      acc[monthYearKey][weekKey][dayKey] =
+        acc[monthYearKey][weekKey][dayKey] || [];
       acc[monthYearKey][weekKey][dayKey].push(visit);
 
       return acc;
     }, {});
-  }, [visits]);
+  }, [visits, userProfile]);
 
   const renderGroupedVisits = () =>
     Object.entries(groupedByMonthWeekDay).map(([monthYear, weeksObj]) => {
@@ -92,7 +106,7 @@ const Main = () => {
         <View key={monthYear} style={mainStyles.dateGroup}>
           <Text
             style={mainStyles.dateHeader}
-            onPress={() => toggleMonth(monthYear)}
+            onPress={() => toggle(setExpandedMonths, monthYear)}
           >
             {monthYear}
           </Text>
@@ -100,7 +114,6 @@ const Main = () => {
             <View>
               {Object.entries(weeks).map(([weekKey, daysObj]) => {
                 const days = daysObj as { [dayKey: string]: Visit[] };
-                // Descobre o período da semana
                 const allVisits = Object.values(days).flat() as Visit[];
                 const sorted = [...allVisits].sort(
                   (a, b) =>
@@ -121,7 +134,9 @@ const Main = () => {
                   >
                     <Text
                       style={{ fontWeight: "bold", color: "#007bff" }}
-                      onPress={() => toggleWeek(monthYear, weekKey)}
+                      onPress={() =>
+                        toggle(setExpandedWeeks, monthYear + weekKey)
+                      }
                     >
                       {expandedWeeks[monthYear + weekKey] ? "▼" : "▶"} Semana:{" "}
                       {weekKey}
@@ -131,7 +146,6 @@ const Main = () => {
                           )} - ${end.toLocaleDateString("pt-BR")})`
                         : ""}
                     </Text>
-
                     {expandedWeeks[monthYear + weekKey] && (
                       <View>
                         {Object.entries(days).map(([day, visitsArr]) => {
@@ -141,7 +155,10 @@ const Main = () => {
                               <Text
                                 style={mainStyles.dateHeader}
                                 onPress={() =>
-                                  toggleDay(monthYear, weekKey, day)
+                                  toggle(
+                                    setExpandedDays,
+                                    monthYear + weekKey + day
+                                  )
                                 }
                               >
                                 {day}
@@ -163,23 +180,27 @@ const Main = () => {
                                         Ciclo: {visit.cicloAno}
                                       </Text>
                                       <Text style={mainStyles.visitText}>
-                                        Location: {visit.location.latitude},{" "}
-                                        {visit.location.longitude}
+                                        Registrado por: {visit.userEmail}
                                       </Text>
-                                      <Text style={mainStyles.visitText}>
-                                        Registered by: {visit.userName}
-                                      </Text>
-                                      <CustomButton
-                                        title="Edit"
-                                        onPress={() =>
-                                          router.push(`/form?id=${visit.id}`)
-                                        }
-                                      />
-                                      <CustomButton
-                                        title="Delete"
-                                        onPress={() => handleDelete(visit.id)}
-                                        color="red"
-                                      />
+                                      {userProfile && userProfile.perfil === "cadastrador" && (
+                                        <>
+                                          <CustomButton
+                                            title="Edit"
+                                            onPress={() =>
+                                              router.push(
+                                                `/form?id=${visit.id}`
+                                              )
+                                            }
+                                          />
+                                          <CustomButton
+                                            title="Delete"
+                                            onPress={() =>
+                                              handleDelete(visit.id)
+                                            }
+                                            color="red"
+                                          />
+                                        </>
+                                      )}
                                     </View>
                                   ))}
                                   <CustomButton
@@ -209,6 +230,7 @@ const Main = () => {
         </View>
       );
     });
+
   const handleDelete = (id: string) => {
     Alert.alert("Delete Visit", "Are you sure you want to delete this visit?", [
       { text: "Cancel", style: "cancel" },
@@ -223,50 +245,22 @@ const Main = () => {
     ]);
   };
 
-  const handleSync = async () => {
-    try {
-      const storedVisits = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedVisits) {
-        const parsedVisits: Visit[] = JSON.parse(storedVisits);
-
-        // Envia os dados locais para o Firestore
-        for (const visit of parsedVisits) {
-          if (!visit.id.startsWith("offline-")) continue; // Ignora visitas já sincronizadas
-          await addDoc(collection(firestore, "visits"), {
-            ...visit,
-            date: Timestamp.fromDate(visit.date),
-          });
-        }
-
-        // Atualiza o estado local e remove os IDs offline
-        const syncedVisits = parsedVisits.map((visit) => ({
-          ...visit,
-          id: visit.id.startsWith("offline-") ? uuidv4() : visit.id,
-        }));
-        await AsyncStorage.setItem(
-          LOCAL_STORAGE_KEY,
-          JSON.stringify(syncedVisits)
-        );
-        console.log("Visits synced with Firestore.");
-        syncVisits(); // Atualiza o estado global
-      }
-
-      Alert.alert("Success", "Visits synchronized with Firestore!");
-    } catch (error) {
-      console.error("Error syncing visits:", error);
-      Alert.alert("Error", "Failed to sync visits.");
-    }
-  };
+  if (!userProfile) {
+    return (
+      <View style={mainStyles.container}>
+        <Text style={mainStyles.title}>Carregando perfil do usuário...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={mainStyles.container}>
-      <Text style={mainStyles.title}>Registered Visits</Text>
+      <Text style={mainStyles.title}>Visitas</Text>
       <ScrollView>{renderGroupedVisits()}</ScrollView>
       <CustomButton
-        title="Create New Visit"
+        title="Registrar nova visita"
         onPress={() => router.push("/form")}
       />
-      <CustomButton title="Sync Visits" onPress={handleSync} />
     </View>
   );
 };

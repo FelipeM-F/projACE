@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet, Alert, Text } from "react-native";
 import TextInputWithLabel from "../components/textInputWithLabel";
 import { z } from "zod";
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -7,39 +7,51 @@ import { auth, firestore } from "../firebaseConfig";
 import { Redirect } from "expo-router";
 import CustomButton from "../components/CustomButton";
 import { doc, setDoc } from "firebase/firestore";
+import RadioButton from "../components/RadioButton";
 
 const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [municipio, setMunicipio] = useState("");
+  const [nome, setNome] = useState("");
+  const [perfil, setPerfil] = useState<"digitador" | "cadastrador" | "">("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [redirectToMain, setRedirectToMain] = useState(false);
 
   const emailSchema = z.string().email({ message: "Invalid email address" });
+  const nomeSchema = z
+    .string()
+    .min(2, { message: "Nome deve ter pelo menos 2 caracteres" });
   const passwordSchema = z
     .string()
     .min(6, { message: "Password must be at least 6 characters long" });
   const municipioSchema = z
     .string()
     .min(2, { message: "Município deve ter pelo menos 2 caracteres" });
+  const perfilSchema = z.enum(["digitador", "cadastrador"], {
+    errorMap: () => ({ message: "Selecione um perfil" }),
+  });
 
   const handleSignUp = async () => {
     try {
       emailSchema.parse(email);
       passwordSchema.parse(password);
       municipioSchema.parse(municipio);
+      perfilSchema.parse(perfil);
+      nomeSchema.parse(nome);
 
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
       const user = userCredential.user;
 
-      // Salva o município no Firestore
       await setDoc(doc(firestore, "users", user.uid), {
         email,
         municipio,
+        perfil,
+        nome
       });
 
       Alert.alert("Sign Up Successful", `Welcome, ${user.email}`);
@@ -84,6 +96,16 @@ const SignUp = () => {
         error={errors.password}
       />
       <TextInputWithLabel
+        label="Nome"
+        placeholder="Digite seu nome"
+        validationSchema={nomeSchema}
+        onChangeText={(text) => {
+          setNome(text);
+          setErrors((prev) => ({ ...prev, nome: "" }));
+        }}
+        error={errors.nome}
+      />
+      <TextInputWithLabel
         label="Município"
         placeholder="Digite o município onde você trabalha"
         validationSchema={municipioSchema}
@@ -93,6 +115,15 @@ const SignUp = () => {
         }}
         error={errors.municipio}
       />
+      <RadioButton
+        options={[
+          { label: "Cadastrador", value: "cadastrador" },
+          { label: "Digitador", value: "digitador" },
+        ]}
+        selectedValue={perfil}
+        onSelect={(value) => setPerfil(value as "digitador" | "cadastrador")}
+      />
+      {errors.perfil && <Text style={{ color: "red" }}>{errors.perfil}</Text>}
       <CustomButton title="Sign Up" onPress={handleSignUp} />
     </View>
   );

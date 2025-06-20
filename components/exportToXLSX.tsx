@@ -10,7 +10,7 @@ export const exportToXLSX = async (date: string, visits: Visit[]) => {
     ...visits.map((visit) => [
       visit.cicloAno,
       `${visit.location.latitude}, ${visit.location.longitude}`,
-      visit.userName,
+      visit.userEmail,
     ]),
   ];
 

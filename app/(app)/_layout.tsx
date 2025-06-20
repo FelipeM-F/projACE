@@ -1,5 +1,5 @@
-import { Stack, useRouter } from "expo-router";
-import { View, Text, StyleSheet } from "react-native";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { View } from "react-native";
 import CustomButton from "../../components/CustomButton";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
@@ -9,6 +9,8 @@ import VisitProvider from "./context/VisitContext";
 
 const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
+  const segments = useSegments();
+  const isMainScreen = segments[segments.length - 1] === "main";
 
   const handleLogout = async () => {
     try {
@@ -22,29 +24,31 @@ const BaseLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <View style={globalStyles.container}>
       <View style={globalStyles.header}>
-        <CustomButton
-          title="Voltar"
-          onPress={() => router.back()}
-          style={{
-            backgroundColor: theme.colors.success,
-            paddingVertical: theme.spacing.tiny, // Reduz o padding vertical
-            paddingHorizontal: theme.spacing.small, // Reduz o padding horizontal
-          }}
-          textStyle={{
-            fontSize: theme.fontSizes.small, // Reduz o tamanho do texto
-          }}
-        />
+        {!isMainScreen && (
+          <CustomButton
+            title="Voltar"
+            onPress={() => router.back()}
+            style={{
+              backgroundColor: theme.colors.success,
+              paddingVertical: theme.spacing.tiny,
+              paddingHorizontal: theme.spacing.small,
+            }}
+            textStyle={{
+              fontSize: theme.fontSizes.small,
+            }}
+          />
+        )}
         <CustomButton
           title="Logout"
           onPress={handleLogout}
           color={theme.colors.danger}
           textColor={theme.colors.white}
           style={{
-            paddingVertical: theme.spacing.tiny, // Reduz o padding vertical
-            paddingHorizontal: theme.spacing.small, // Reduz o padding horizontal
+            paddingVertical: theme.spacing.tiny,
+            paddingHorizontal: theme.spacing.small,
           }}
           textStyle={{
-            fontSize: theme.fontSizes.small, // Reduz o tamanho do texto
+            fontSize: theme.fontSizes.small,
           }}
         />
       </View>
