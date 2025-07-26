@@ -1,50 +1,82 @@
-# Welcome to your Expo app 👋
+# projACE
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo mobile para registro, acompanhamento e exportação de visitas de agentes de saúde em atividades de campo, desenvolvido com [Expo](https://expo.dev), React Native e Firebase.
 
-## Get started
+## Funcionalidades
 
-1. Install dependencies
+- Cadastro e autenticação de usuários (Cadastrador e Digitador)
+- Registro de visitas com localização, dados do imóvel, depósitos, tratamentos e pendências
+- Visualização das visitas agrupadas por mês, semana e dia
+- Exportação de relatórios em PDF e XLSX (Excel)
+- Relatório semanal (FAD-07) por usuário
+- Sincronização online/offline com Firebase e armazenamento local
+- Permissões diferenciadas por perfil:
+  - **Cadastrador:** pode criar, editar e visualizar apenas suas próprias visitas
+  - **Digitador:** pode visualizar e exportar todas as visitas do município, mas não pode editar/excluir
 
-   ```bash
+## Estrutura do Projeto
+
+```
+app/
+  _layout.tsx
+  index.tsx
+  signUp.tsx
+  (app)/
+    main.tsx
+    form.tsx
+    context/
+    styles/
+components/
+  CustomButton.tsx
+  DepositsInput.tsx
+  TratamentoInput.tsx
+  exportToPDF.tsx
+  exportToXLSX.tsx
+  exportWeekToPdf.tsx
+  ...
+utils/
+  dateUtils.ts
+firebaseConfig.js
+...
+```
+
+## Instalação
+
+1. Clone o repositório:
+   ```sh
+   git clone https://github.com/seu-usuario/projACE.git
+   cd projACE
+   ```
+
+2. Instale as dependências:
+   ```sh
    npm install
    ```
 
-2. Start the app
+3. Configure o Firebase:
+   - Edite o arquivo `firebaseConfig.js` com suas credenciais do Firebase.
+   - Adicione seu arquivo `google-services.json` para Android.
 
-   ```bash
-    npx expo start
+4. Inicie o projeto:
+   ```sh
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Scripts
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- `npm start` — inicia o projeto Expo
+- `npm run android` — executa no emulador Android
+- `npm run ios` — executa no simulador iOS
+- `npm run web` — executa no navegador
+- `npm run lint` — executa o linter
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tecnologias
 
-## Get a fresh project
+- [Expo](https://expo.dev/)
+- [React Native](https://reactnative.dev/)
+- [Firebase (Auth & Firestore)](https://firebase.google.com/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Zod](https://zod.dev/) (validação)
+- [xlsx](https://www.npmjs.com/package/xlsx) (exportação Excel)
+- [expo-print](https://docs.expo.dev/versions/latest/sdk/print/) (PDF)
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

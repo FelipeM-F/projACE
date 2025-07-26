@@ -35,4 +35,12 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# Firebase config
+firebaseConfig.js
+google-services.json
+
+# Variáveis de ambiente
+.env
+.env.*
+
 app-example

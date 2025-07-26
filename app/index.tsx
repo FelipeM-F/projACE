@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import TextInputWithLabel from "../components/textInputWithLabel";
+import TextInputWithLabel from "../components/TextInputWithLabel";
 import { z } from "zod";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebaseConfig";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Alert, ScrollView,KeyboardAvoidingView, Text, FlatList } from "react-native";
-import TextInputWithLabel from "../../components/textInputWithLabel";
+import TextInputWithLabel from "../../components/TextInputWithLabel";
 import DropdownWithLabel from "../../components/dropdownWithLabel";
 import DateTimePickerWithLabel from "../../components/dateTimePickerWithLabel";
 import LocationInfo from "../../components/location-info";
