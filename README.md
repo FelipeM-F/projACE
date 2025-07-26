@@ -1,4 +1,4 @@
-# projACE
+# Projeto de aplicativo para agente de endemias
 
 Aplicativo mobile para registro, acompanhamento e exportação de visitas de agentes de saúde em atividades de campo, desenvolvido com [Expo](https://expo.dev), React Native e Firebase.
 
